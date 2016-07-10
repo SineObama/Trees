@@ -42,6 +42,7 @@ private:
     bool removeFromNode(const_ref, NodePtrRef);
 
     void rotate(NodePtrRef, bool right);
+    void fillNode(NodePtrRef);
 
     int testAndGetHeight(NodePtr);
 
@@ -73,9 +74,11 @@ bool AVLTree<T>::insert(const_ref t) {
     return insertToNode(t, root);
 }
 
+// hehe
 template<class T>
 bool AVLTree<T>::remove(const_ref t) {
-    // todo judge?
+    if (root == NULL)
+        return false;
     return removeFromNode(t, root);
 }
 
@@ -156,25 +159,45 @@ bool AVLTree<T>::insertToNode(const_ref v, NodePtrRef r) {
 
 template<class T>
 bool AVLTree<T>::removeFromNode(const_ref v, NodePtrRef r) {
-    if (r == NULL)
+    if (v == r->v) {
+        NodePtr del = r;
+        fillNode(r);
+        delete del;
+        return true;
+    }
+    int a = v < r->v ? 1 : -1;
+    int i = v < r->v ? 0 : 1;
+    NodePtrRef c = r->child[i];
+    if (c == NULL)
         return false;
-    return false;
+    int BF = c->BF;
+    if (!removeFromNode(v, c))
+        return false;
+    if (c != NULL && (BF == 0 || c->BF != 0))
+        return true;
+    r->BF -= a;
+    if (r->BF * a < -1) {
+        if (r->child[1 - i]->BF * a > 0)
+            rotate(r->child[1 - i], i == 0);
+        rotate(r, i == 1);
+    }
+    return true;
 }
 
 /**
- * 示例：
- *      　　n
- *         / \
- *      　m　 z
- *       / \
- *      x　 y
+ * 演算：
+ * 　　　　ｎ
+ * 　　　／　＼
+ * 　　ｍ　　　ｚ
+ * 　／　＼
+ * ｘ　　　ｙ
  * x,y,z是节点深度，m,n是平衡因子。准备右旋。
  * m = x - y, n = Max{x, y} + 1 - z
- *      　　m2
- *         / \
- *      　x　 n2
- *      　　 / \
- *      　　y　 z
+ * 　　　　m2
+ * 　　　／　＼
+ * 　　ｘ　　　n2
+ * 　　　　　／　\
+ * 　　　　ｙ　　　ｚ
  * m2 = x - Max{y, z} - 1, n2 = y - z
  * 分2种情况：
  * 1. x <= y 即 m <= 0
@@ -196,6 +219,32 @@ void AVLTree<T>::rotate(NodePtrRef r, bool right) {
     r->BF += a - (a * c->BF < 0 ? c->BF : 0);
     c->BF += a + (a * r->BF > 0 ? r->BF : 0);
     r = c;
+}
+
+template<class T>
+void AVLTree<T>::fillNode(NodePtrRef r) {
+    int i = 0;
+    if (r->BF < 0)
+        i = 1;
+    else if (r->BF == 0) {
+        if (r->child[0] == NULL) {
+            r = NULL;
+            return;
+        }
+        i = rand() % 2;
+    }
+    int a = i == 0 ? 1 : -1;
+    int BF = r->BF;
+    NodePtr p = r->child[i];
+    NodePtrRef c = r->child[i];
+    int SBF = c->BF;
+    fillNode(c);
+    if (c == NULL || (SBF != 0 && c->BF == 0))
+        BF -= a;
+    p->BF = BF;
+    p->child[i] = r->child[i];
+    p->child[1 - i] = r->child[1 - i];
+    r = p;
 }
 
 template<class T>

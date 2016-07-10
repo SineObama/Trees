@@ -12,10 +12,13 @@ using namespace std;
 int main()
 {
     AVLTree<int> t;
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100000; i++) {
         t.insert(rand());
-        cout << t.test();
     }
-    system("pause");
+    for (int i = 0; i < 100000; i++) {
+        t.remove(rand());
+    }
+        int re = t.test();
+    //system("pause");
     return 0;
 }
