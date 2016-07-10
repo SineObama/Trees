@@ -19,7 +19,7 @@ public:
     bool insert(const_ref);
     bool remove(const_ref);
 
-    bool test();
+    int test();
 
 private:
 
@@ -66,17 +66,22 @@ AVLTree<T>::~AVLTree() {
 
 template<class T>
 bool AVLTree<T>::insert(const_ref t) {
+    if (root == NULL) {
+        root = new Node(t);
+        return true;
+    }
     return insertToNode(t, root);
 }
 
 template<class T>
 bool AVLTree<T>::remove(const_ref t) {
+    // todo judge?
     return removeFromNode(t, root);
 }
 
 template<class T>
-bool AVLTree<T>::test() {
-    return testAndGetHeight(root) != -1;
+int AVLTree<T>::test() {
+    return testAndGetHeight(root);
 }
 
 template<class T>
@@ -120,23 +125,32 @@ void AVLTree<T>::Node::remove(NodePtrRef root) {
     root = NULL;
 }
 
+/**
+ * 不接受空节点
+ */
 template<class T>
 bool AVLTree<T>::insertToNode(const_ref v, NodePtrRef r) {
-    if (r == NULL)
-        return r = new Node(v);
     if (v == r->v)
         return false;
     int a = v < r->v ? 1 : -1;
     int i = v < r->v ? 0 : 1;
     NodePtrRef c = r->child[i];
+    if (c == NULL) {
+        r->BF += a;
+        c = new Node(v);
+        return true;
+    }
     int BF = c->BF;
     if (!insertToNode(v, c))
         return false;
     if (BF != 0 || c->BF == 0)
         return true;
     r->BF += a;
-    if (r->BF * a > a)
-        rotate(r, a);
+    if (r->BF * a > 1) {
+        if (c->BF * a < 0)
+            rotate(c, i == 1);
+        rotate(r, i == 0);
+    }
     return true;
 }
 
@@ -147,6 +161,31 @@ bool AVLTree<T>::removeFromNode(const_ref v, NodePtrRef r) {
     return false;
 }
 
+/**
+ * 示例：
+ *      　　n
+ *         / \
+ *      　m　 z
+ *       / \
+ *      x　 y
+ * x,y,z是节点深度，m,n是平衡因子。准备右旋。
+ * m = x - y, n = Max{x, y} + 1 - z
+ *      　　m2
+ *         / \
+ *      　x　 n2
+ *      　　 / \
+ *      　　y　 z
+ * m2 = x - Max{y, z} - 1, n2 = y - z
+ * 分2种情况：
+ * 1. x <= y 即 m <= 0
+ * m = x - y, n = y - z + 1
+ * m2 = Min{m, m + n - 1} - 1, n2 = n - 1
+ * 2. x > y 即 m > 0
+ * m = x - y, n = x - z + 1;
+ * m2 = Min{m, n - 1} - 1, n2 = n - m - 1;
+ * 综合：
+ * m2 - m = Min{0, n2} - 1, n2 - n = Min{0, -m} - 1
+ */
 template<class T>
 void AVLTree<T>::rotate(NodePtrRef r, bool right) {
     int i = right ? 1 : 0;
@@ -154,13 +193,8 @@ void AVLTree<T>::rotate(NodePtrRef r, bool right) {
     NodePtr c = r->child[1 - i];
     r->child[1 - i] = c->child[i];
     c->child[i] = r;
-    if (c->BF * a >= 0) {
-        r->BF += a;
-        c->BF -= a;
-    }
-    else {
-        r->BF += - c->BF + a;
-    }
+    r->BF += a - (a * c->BF < 0 ? c->BF : 0);
+    c->BF += a + (a * r->BF > 0 ? r->BF : 0);
     r = c;
 }
 
@@ -174,7 +208,7 @@ int AVLTree<T>::testAndGetHeight(NodePtr r) {
     int h1 = testAndGetHeight(r->child[1]);
     if (h1 == -1)
         return -1;
-    if (r->BF != h0 - h1)
+    if (r->BF * r->BF > 1 || r->BF != h0 - h1)
         return -1;
     return (h0 > h1 ? h0 : h1) + 1;
 }
