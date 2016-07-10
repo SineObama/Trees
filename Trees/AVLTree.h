@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdexcept>
-#include "BinaryTree.h"
 
 namespace sine {
 namespace tree {
@@ -11,7 +10,7 @@ class AVLTree {
 
 public:
 
-    typedef const T & const_ref
+    typedef const T & const_ref;
 
     AVLTree();
     AVLTree(const AVLTree<T> &);
@@ -20,25 +19,31 @@ public:
     bool insert(const_ref);
     bool remove(const_ref);
 
+    bool test();
 
 private:
 
+    class Node;
     typedef Node * NodePtr;
-    typedef Node *& NodeRef;
+    typedef Node *& NodePtrRef;
 
-    class Node {
+    struct Node {
         T v;
         NodePtr child[2];
         int BF;
         Node();
         Node(const_ref);
-        NodeRef operator[](int index);
+        NodePtrRef operator[](int index);
         static NodePtr clone(NodePtr);
-        static void remove(NodeRef);
+        static void remove(NodePtrRef);
     };
 
-    bool insertToNode(const_ref, NodeRef);
-    bool removeFromNode(const_ref, NodeRef);
+    bool insertToNode(const_ref, NodePtrRef);
+    bool removeFromNode(const_ref, NodePtrRef);
+
+    void rotate(NodePtrRef, bool right);
+
+    int testAndGetHeight(NodePtr);
 
     NodePtr root;
 
@@ -70,28 +75,32 @@ bool AVLTree<T>::remove(const_ref t) {
 }
 
 template<class T>
-AVLTree<T>::Node::Node() {
-    for (std::size_t i = 0; i < maxChild; i++)
-        child[i] = NULL;
+bool AVLTree<T>::test() {
+    return testAndGetHeight(root) != -1;
+}
+
+template<class T>
+AVLTree<T>::Node::Node()
+    : BF(0) {
+    memset(child, NULL, 2 * sizeof(NodePtr));
 }
 
 template<class T>
 AVLTree<T>::Node::Node(const_ref t)
-    : v(t) {
-    for (std::size_t i = 0; i < maxChild; i++)
-        child[i] = NULL;
+    : v(t), BF(0) {
+    memset(child, NULL, 2 * sizeof(NodePtr));
 }
 
 template<class T>
-typename AbstractTree<T>::NodeRef
-AbstractTree<T>::Node::operator[](int index) {
+typename AVLTree<T>::NodePtrRef
+AVLTree<T>::Node::operator[](int index) {
     if (index >= 2)
         throw std::out_of_range();
     return *child[index];
 }
 
 template<class T>
-typename AbstractTree<T>::NodePtr AbstractTree<T>::Node::clone(NodePtr root) {
+typename AVLTree<T>::NodePtr AVLTree<T>::Node::clone(NodePtr root) {
     if (root == NULL)
         return NULL;
     NodePtr rtn = new NodePtr(root->v);
@@ -102,9 +111,9 @@ typename AbstractTree<T>::NodePtr AbstractTree<T>::Node::clone(NodePtr root) {
 }
 
 template<class T>
-void AbstractTree<T>::Node::remove(NodeRef root) {
+void AVLTree<T>::Node::remove(NodePtrRef root) {
     if (root == NULL)
-        return NULL;
+        return;
     remove(root->child[0]);
     remove(root->child[1]);
     delete root;
@@ -112,14 +121,62 @@ void AbstractTree<T>::Node::remove(NodeRef root) {
 }
 
 template<class T>
-bool AVLTree<T>::insertToNode(const_ref v, NodeRef r) {
-
+bool AVLTree<T>::insertToNode(const_ref v, NodePtrRef r) {
+    if (r == NULL)
+        return r = new Node(v);
+    if (v == r->v)
+        return false;
+    int a = v < r->v ? 1 : -1;
+    int i = v < r->v ? 0 : 1;
+    NodePtrRef c = r->child[i];
+    int BF = c->BF;
+    if (!insertToNode(v, c))
+        return false;
+    if (BF != 0 || c->BF == 0)
+        return true;
+    r->BF += a;
+    if (r->BF * a > a)
+        rotate(r, a);
+    return true;
 }
 
 template<class T>
-bool AVLTree<T>::removeFromNode(const_ref v, NodeRef r) {
+bool AVLTree<T>::removeFromNode(const_ref v, NodePtrRef r) {
     if (r == NULL)
         return false;
+    return false;
+}
+
+template<class T>
+void AVLTree<T>::rotate(NodePtrRef r, bool right) {
+    int i = right ? 1 : 0;
+    int a = right ? -1 : 1;
+    NodePtr c = r->child[1 - i];
+    r->child[1 - i] = c->child[i];
+    c->child[i] = r;
+    if (c->BF * a >= 0) {
+        r->BF += a;
+        c->BF -= a;
+    }
+    else {
+        r->BF += - c->BF + a;
+    }
+    r = c;
+}
+
+template<class T>
+int AVLTree<T>::testAndGetHeight(NodePtr r) {
+    if (r == NULL)
+        return 0;
+    int h0 = testAndGetHeight(r->child[0]);
+    if (h0 == -1)
+        return -1;
+    int h1 = testAndGetHeight(r->child[1]);
+    if (h1 == -1)
+        return -1;
+    if (r->BF != h0 - h1)
+        return -1;
+    return (h0 > h1 ? h0 : h1) + 1;
 }
 
 }

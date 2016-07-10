@@ -10,20 +10,20 @@ class AbstractTree {
 
 public:
 
+
+    class Node {
+    public:
+        Node * child[maxChild];
+        T v;
+        Node();
+        Node *& operator[](int index);
+    };
+
     typedef Node * Ptr;
     typedef Node *& Ref;
     typedef void(*treat)(Ptr);
 
-    class Node {
-    public:
-        Ptr child[maxChild];
-        T v;
-        Node();
-        Ref operator[](int index);
-    };
-
     AbstractTree();
-    AbstractTree(AbstractTree<T, maxChild>);
 
 protected:
 
