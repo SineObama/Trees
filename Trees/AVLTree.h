@@ -10,6 +10,7 @@ class AVLTree {
 
 public:
 
+    typedef T & ref;
     typedef const T & const_ref;
 
     AVLTree();
@@ -18,6 +19,8 @@ public:
 
     bool insert(const_ref);
     bool remove(const_ref);
+
+    bool find(ref);
 
     int test();
 
@@ -38,13 +41,15 @@ private:
         static void remove(NodePtrRef);
     };
 
-    bool insertToNode(const_ref, NodePtrRef);
-    bool removeFromNode(const_ref, NodePtrRef);
+    static bool insertToTree(const_ref, NodePtrRef);
+    static bool removeFromTree(const_ref, NodePtrRef);
 
-    void rotate(NodePtrRef, bool right);
-    void fillNode(NodePtrRef);
+    static bool findInTree(ref, NodePtr);
 
-    int testAndGetHeight(NodePtr);
+    static void rotate(NodePtrRef, bool right);
+    static void fillNode(NodePtrRef);
+
+    static int testAndGetHeight(NodePtr);
 
     NodePtr root;
 
@@ -71,15 +76,19 @@ bool AVLTree<T>::insert(const_ref t) {
         root = new Node(t);
         return true;
     }
-    return insertToNode(t, root);
+    return insertToTree(t, root);
 }
 
-// hehe
 template<class T>
 bool AVLTree<T>::remove(const_ref t) {
     if (root == NULL)
         return false;
-    return removeFromNode(t, root);
+    return removeFromTree(t, root);
+}
+
+template<class T>
+bool AVLTree<T>::find(ref r) {
+    return findInTree(r, root);
 }
 
 template<class T>
@@ -132,7 +141,7 @@ void AVLTree<T>::Node::remove(NodePtrRef root) {
  * 不接受空节点
  */
 template<class T>
-bool AVLTree<T>::insertToNode(const_ref v, NodePtrRef r) {
+bool AVLTree<T>::insertToTree(const_ref v, NodePtrRef r) {
     if (v == r->v)
         return false;
     int a = v < r->v ? 1 : -1;
@@ -144,7 +153,7 @@ bool AVLTree<T>::insertToNode(const_ref v, NodePtrRef r) {
         return true;
     }
     int BF = c->BF;
-    if (!insertToNode(v, c))
+    if (!insertToTree(v, c))
         return false;
     if (BF != 0 || c->BF == 0)
         return true;
@@ -157,8 +166,11 @@ bool AVLTree<T>::insertToNode(const_ref v, NodePtrRef r) {
     return true;
 }
 
+/**
+* 不接受空节点
+*/
 template<class T>
-bool AVLTree<T>::removeFromNode(const_ref v, NodePtrRef r) {
+bool AVLTree<T>::removeFromTree(const_ref v, NodePtrRef r) {
     if (v == r->v) {
         NodePtr del = r;
         fillNode(r);
@@ -171,7 +183,7 @@ bool AVLTree<T>::removeFromNode(const_ref v, NodePtrRef r) {
     if (c == NULL)
         return false;
     int BF = c->BF;
-    if (!removeFromNode(v, c))
+    if (!removeFromTree(v, c))
         return false;
     if (c != NULL && (BF == 0 || c->BF != 0))
         return true;
@@ -245,6 +257,18 @@ void AVLTree<T>::fillNode(NodePtrRef r) {
     p->child[i] = r->child[i];
     p->child[1 - i] = r->child[1 - i];
     r = p;
+}
+
+template<class T>
+bool AVLTree<T>::findInTree(ref v, NodePtr root) {
+    if (root == NULL)
+        return false;
+    if (v == root->v) {
+        v = root->v;
+        return true;
+    }
+    int i = v < root->v ? 0 : 1;
+    return findInTree(v, root->child[i]);
 }
 
 template<class T>
