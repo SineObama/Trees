@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include <stack>
 #include <iostream>
+#include <ctime>
 #include "AVLTree.h"
 
 using namespace sine::tree;
@@ -23,16 +24,21 @@ public:
 
 int main()
 {
+    srand(time(NULL));
     AVLTree<test> t;
-    for (int i = 0; i < 1000000; i++) {
+    for (int i = 0; i < 100000; i++) {
         t.insert(test(rand(), 1));
     }
-    /*for (int i = 0; i < 100; i++) {
-        t.remove(rand());
-    }*/
-    test a(rand(), 0);
-    cout << t.find(a);
-        int re = t.test();
-    //system("pause");
+    for (int i = 0; i < 10000; i++) {
+        t.remove(test(rand(), 1));
+    }
+    for (int i = 0; i < 100; i++) {
+        test a(rand(), 0);
+        if (t.find(a))
+            cout << a.d << endl;
+    }
+    int re = t.test();
+    cout << re << endl;
+    system("pause");
     return 0;
 }

@@ -5,54 +5,25 @@
 namespace sine {
 namespace tree {
 
-template<class T, std::size_t maxChild>
+template<class T>
 class AbstractTree {
 
 public:
 
+    typedef T & ref;
+    typedef const T & const_ref;
+    typedef void(*handle)(const_ref);
 
-    class Node {
-    public:
-        Node * child[maxChild];
-        T v;
-        Node();
-        Node *& operator[](int index);
-    };
+//     virtual AbstractTree() = 0;
+//     virtual AbstractTree(const AbstractTree<T> &) = 0;
+    virtual ~AbstractTree() {}
 
-    typedef Node * Ptr;
-    typedef Node *& Ref;
-    typedef void(*treat)(Ptr);
+    virtual bool insert(const_ref) = 0;
+    virtual bool remove(const_ref) = 0;
 
-    AbstractTree();
-
-protected:
-
-    Ptr root;
-
-private:
-
-
+    virtual bool find(ref) = 0;
 
 };
-
-template<class T, int maxChild>
-AbstractTree<T, maxChild>::Node::Node() {
-    for (std::size_t i = 0; i < maxChild; i++)
-        child[i] = NULL;
-}
-
-template<class T, int maxChild>
-typename AbstractTree<T, maxChild>::Ref
-AbstractTree<T, maxChild>::Node::operator[](int index) {
-    if (index >= maxChild)
-        throw std::out_of_range();
-    return *child[index];
-}
-
-template<class T, int maxChild>
-AbstractTree<T, maxChild>::AbstractTree() {
-    root = NULL;
-}
 
 }
 }

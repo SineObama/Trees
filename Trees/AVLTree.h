@@ -1,17 +1,15 @@
 #pragma once
 
 #include <stdexcept>
+#include "AbstractTree.h"
 
 namespace sine {
 namespace tree {
 
 template<class T>
-class AVLTree {
+class AVLTree : public AbstractTree<T> {
 
 public:
-
-    typedef T & ref;
-    typedef const T & const_ref;
 
     AVLTree();
     AVLTree(const AVLTree<T> &);
@@ -27,31 +25,32 @@ public:
 private:
 
     class Node;
-    typedef Node * NodePtr;
-    typedef Node *& NodePtrRef;
+    typedef Node * node_ptr;
+    typedef Node *& node_ptr_ref;
 
-    struct Node {
+    class Node {
+        public:
         T v;
-        NodePtr child[2];
+        node_ptr child[2];
         int BF;
         Node();
         Node(const_ref);
-        NodePtrRef operator[](int index);
-        static NodePtr clone(NodePtr);
-        static void remove(NodePtrRef);
+        node_ptr_ref operator[](int index);
+        static node_ptr clone(node_ptr);
+        static void remove(node_ptr_ref);
     };
 
-    static bool insertToTree(const_ref, NodePtrRef);
-    static bool removeFromTree(const_ref, NodePtrRef);
+    static bool insertToTree(const_ref, node_ptr_ref);
+    static bool removeFromTree(const_ref, node_ptr_ref);
 
-    static bool findInTree(ref, NodePtr);
+    static bool findInTree(ref, node_ptr);
 
-    static void rotate(NodePtrRef, bool right);
-    static void fillNode(NodePtrRef);
+    static void rotate(node_ptr_ref, bool right);
+    static void fillNode(node_ptr_ref);
 
-    static int testAndGetHeight(NodePtr);
+    static int testAndGetHeight(node_ptr);
 
-    NodePtr root;
+    node_ptr root;
 
 };
 
@@ -99,17 +98,17 @@ int AVLTree<T>::test() {
 template<class T>
 AVLTree<T>::Node::Node()
     : BF(0) {
-    memset(child, NULL, 2 * sizeof(NodePtr));
+    memset(child, NULL, 2 * sizeof(node_ptr));
 }
 
 template<class T>
-AVLTree<T>::Node::Node(const_ref t)
-    : v(t), BF(0) {
-    memset(child, NULL, 2 * sizeof(NodePtr));
+AVLTree<T>::Node::Node(const_ref v)
+    : v(v), BF(0) {
+    memset(child, NULL, 2 * sizeof(node_ptr));
 }
 
 template<class T>
-typename AVLTree<T>::NodePtrRef
+typename AVLTree<T>::node_ptr_ref
 AVLTree<T>::Node::operator[](int index) {
     if (index >= 2)
         throw std::out_of_range();
@@ -117,10 +116,10 @@ AVLTree<T>::Node::operator[](int index) {
 }
 
 template<class T>
-typename AVLTree<T>::NodePtr AVLTree<T>::Node::clone(NodePtr root) {
+typename AVLTree<T>::node_ptr AVLTree<T>::Node::clone(node_ptr root) {
     if (root == NULL)
         return NULL;
-    NodePtr rtn = new NodePtr(root->v);
+    node_ptr rtn = new node_ptr(root->v);
     rtn->child[0] = clone(root->child[0]);
     rtn->child[1] = clone(root->child[1]);
     rtn->BF = root->BF;
@@ -128,7 +127,7 @@ typename AVLTree<T>::NodePtr AVLTree<T>::Node::clone(NodePtr root) {
 }
 
 template<class T>
-void AVLTree<T>::Node::remove(NodePtrRef root) {
+void AVLTree<T>::Node::remove(node_ptr_ref root) {
     if (root == NULL)
         return;
     remove(root->child[0]);
@@ -141,12 +140,12 @@ void AVLTree<T>::Node::remove(NodePtrRef root) {
  * 不接受空节点
  */
 template<class T>
-bool AVLTree<T>::insertToTree(const_ref v, NodePtrRef r) {
+bool AVLTree<T>::insertToTree(const_ref v, node_ptr_ref r) {
     if (v == r->v)
         return false;
     int a = v < r->v ? 1 : -1;
     int i = v < r->v ? 0 : 1;
-    NodePtrRef c = r->child[i];
+    node_ptr_ref c = r->child[i];
     if (c == NULL) {
         r->BF += a;
         c = new Node(v);
@@ -170,16 +169,16 @@ bool AVLTree<T>::insertToTree(const_ref v, NodePtrRef r) {
 * 不接受空节点
 */
 template<class T>
-bool AVLTree<T>::removeFromTree(const_ref v, NodePtrRef r) {
+bool AVLTree<T>::removeFromTree(const_ref v, node_ptr_ref r) {
     if (v == r->v) {
-        NodePtr del = r;
+        node_ptr del = r;
         fillNode(r);
         delete del;
         return true;
     }
     int a = v < r->v ? 1 : -1;
     int i = v < r->v ? 0 : 1;
-    NodePtrRef c = r->child[i];
+    node_ptr_ref c = r->child[i];
     if (c == NULL)
         return false;
     int BF = c->BF;
@@ -222,10 +221,10 @@ bool AVLTree<T>::removeFromTree(const_ref v, NodePtrRef r) {
  * m2 - m = Min{0, n2} - 1, n2 - n = Min{0, -m} - 1
  */
 template<class T>
-void AVLTree<T>::rotate(NodePtrRef r, bool right) {
+void AVLTree<T>::rotate(node_ptr_ref r, bool right) {
     int i = right ? 1 : 0;
     int a = right ? -1 : 1;
-    NodePtr c = r->child[1 - i];
+    node_ptr c = r->child[1 - i];
     r->child[1 - i] = c->child[i];
     c->child[i] = r;
     r->BF += a - (a * c->BF < 0 ? c->BF : 0);
@@ -234,7 +233,7 @@ void AVLTree<T>::rotate(NodePtrRef r, bool right) {
 }
 
 template<class T>
-void AVLTree<T>::fillNode(NodePtrRef r) {
+void AVLTree<T>::fillNode(node_ptr_ref r) {
     int i = 0;
     if (r->BF < 0)
         i = 1;
@@ -247,8 +246,8 @@ void AVLTree<T>::fillNode(NodePtrRef r) {
     }
     int a = i == 0 ? 1 : -1;
     int BF = r->BF;
-    NodePtr p = r->child[i];
-    NodePtrRef c = r->child[i];
+    node_ptr p = r->child[i];
+    node_ptr_ref c = r->child[i];
     int SBF = c->BF;
     fillNode(c);
     if (c == NULL || (SBF != 0 && c->BF == 0))
@@ -260,7 +259,7 @@ void AVLTree<T>::fillNode(NodePtrRef r) {
 }
 
 template<class T>
-bool AVLTree<T>::findInTree(ref v, NodePtr root) {
+bool AVLTree<T>::findInTree(ref v, node_ptr root) {
     if (root == NULL)
         return false;
     if (v == root->v) {
@@ -272,7 +271,7 @@ bool AVLTree<T>::findInTree(ref v, NodePtr root) {
 }
 
 template<class T>
-int AVLTree<T>::testAndGetHeight(NodePtr r) {
+int AVLTree<T>::testAndGetHeight(node_ptr r) {
     if (r == NULL)
         return 0;
     int h0 = testAndGetHeight(r->child[0]);

@@ -6,8 +6,8 @@ namespace sine {
 namespace tree {
 
 template<class T>
-class BinaryTree : public AbstractTree<T, 2> {
-    
+class BinaryTree : public AbstractTree<T> {
+
 };
 
 }
