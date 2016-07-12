@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-
 namespace sine {
 namespace tree {
 
@@ -14,8 +12,6 @@ public:
     typedef const T & const_ref;
     typedef void(*handle)(const_ref);
 
-//     virtual AbstractTree() = 0;
-//     virtual AbstractTree(const AbstractTree<T> &) = 0;
     virtual ~AbstractTree() {}
 
     virtual bool insert(const_ref) = 0;

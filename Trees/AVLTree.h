@@ -1,24 +1,24 @@
 #pragma once
 
 #include <stdexcept>
-#include "AbstractTree.h"
+#include "BinaryTree.h"
 
 namespace sine {
 namespace tree {
 
 template<class T>
-class AVLTree : public AbstractTree<T> {
+class AVLTree : public BinaryTree<T> {
 
 public:
 
     AVLTree();
     AVLTree(const AVLTree<T> &);
-    ~AVLTree();
+    virtual ~AVLTree();
 
-    bool insert(const_ref);
-    bool remove(const_ref);
+    virtual bool insert(const_ref);
+    virtual bool remove(const_ref);
 
-    bool find(ref);
+    virtual bool find(ref);
 
     int test();
 
@@ -31,11 +31,10 @@ private:
     class Node {
         public:
         T v;
-        node_ptr child[2];
         int BF;
+        node_ptr child[2];
         Node();
         Node(const_ref);
-        node_ptr_ref operator[](int index);
         static node_ptr clone(node_ptr);
         static void remove(node_ptr_ref);
     };
@@ -105,14 +104,6 @@ template<class T>
 AVLTree<T>::Node::Node(const_ref v)
     : v(v), BF(0) {
     memset(child, NULL, 2 * sizeof(node_ptr));
-}
-
-template<class T>
-typename AVLTree<T>::node_ptr_ref
-AVLTree<T>::Node::operator[](int index) {
-    if (index >= 2)
-        throw std::out_of_range();
-    return *child[index];
 }
 
 template<class T>

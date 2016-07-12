@@ -6,6 +6,7 @@
 #include <iostream>
 #include <ctime>
 #include "AVLTree.h"
+#include "RBTree.h"
 
 using namespace sine::tree;
 using namespace std;
@@ -24,8 +25,8 @@ public:
 
 int main()
 {
-    srand(time(NULL));
-    AVLTree<test> t;
+    srand(time(NULL) & 0xFFFFFFFF);
+    RBTree<test> t;
     for (int i = 0; i < 100000; i++) {
         t.insert(test(rand(), 1));
     }
