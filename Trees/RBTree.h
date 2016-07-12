@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <cassert>
 #include "BinaryTree.h"
 
 namespace sine {
@@ -39,12 +40,12 @@ private:
         static void remove(node_ptr_ref);
     };
 
-    static bool insertToTree(const_ref, node_ptr_ref);
+    static bool insertToTree(const_ref, node_ptr_ref, int &sign);
     //static bool removeFromTree(const_ref, node_ptr_ref);
 
     static bool findInTree(ref, node_ptr);
 
-    //static void rotate(node_ptr_ref, bool right);
+    static void rotate(node_ptr_ref, bool right);
     //static void fillNode(node_ptr_ref);
 
     static int testAndGetBlacks(node_ptr);
@@ -72,11 +73,14 @@ template<class T>
 bool RBTree<T>::insert(const_ref t) {
     if (root == NULL) {
         root = new Node(t);
+        root->red = false;
         return true;
     }
-    if (!insertToTree(t, root))
+    int unused;
+    if (!insertToTree(t, root, unused))
         return false;
     root->red = false;
+    return true;
 }
 
 template<class T>
@@ -129,42 +133,30 @@ void RBTree<T>::Node::remove(node_ptr_ref root) {
     delete root;
     root = NULL;
 }
-/**
- * 0:
- * 1-1 1
- * 0-1 1
- * 1-0 0
- * 0-0 1
- * 1:
- * 0-0 1
- * 0-1 
- * 1-0 0
- * 1-1 
- */
-/**
- * 不接受空指针。采用假装根是红色的方式。
- */
+
 template<class T>
-bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r) {
+bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r, int &sign) {
     if (v == r->v)
         return false;
-    int a = v < r->v ? 1 : -1;
     int i = v < r->v ? 0 : 1;
     node_ptr_ref c = r->child[i];
     if (c == NULL) {
         c = new Node(v);
-        r->red = false;
+        if (r->red)
+            sign = i;
         return true;
     }
-    bool red = c->red;
-    c->red = true;
-    if (!insertToTree(v, c))
+    int sign2 = -1;
+    if (!insertToTree(v, c, sign2))
         return false;
-    if (red == true || c->red == true) {
-        c->red = red;
-        return true;
+    if (sign2 != -1) {
+        if (sign2 != i)
+            rotate(c, i == 1);
+        c->child[i]->red = false;
+        rotate(r, i == 0);
     }
-
+    else if (r->red && c->red)
+        sign = i;
     return true;
 }
 
@@ -195,17 +187,14 @@ bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r) {
 //     return true;
 // }
 
-// template<class T>
-// void RBTree<T>::rotate(node_ptr_ref r, bool right) {
-//     int i = right ? 1 : 0;
-//     int a = right ? -1 : 1;
-//     node_ptr c = r->child[1 - i];
-//     r->child[1 - i] = c->child[i];
-//     c->child[i] = r;
-//     r->BF += a - (a * c->BF < 0 ? c->BF : 0);
-//     c->BF += a + (a * r->BF > 0 ? r->BF : 0);
-//     r = c;
-// }
+template<class T>
+void RBTree<T>::rotate(node_ptr_ref r, bool right) {
+    int i = right ? 1 : 0;
+    node_ptr c = r->child[1 - i];
+    r->child[1 - i] = c->child[i];
+    c->child[i] = r;
+    r = c;
+}
 
 // template<class T>
 // void RBTree<T>::fillNode(node_ptr_ref r) {
