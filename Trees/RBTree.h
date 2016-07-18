@@ -4,10 +4,10 @@
 #include <cassert>
 #include "BinaryTree.h"
 
-#define NDEBUG
-
 namespace sine {
 namespace tree {
+
+#define IS_RED(r) (r != NULL && r->red)
 
 template<class T>
 class RBTree : public BinaryTree<T> {
@@ -41,8 +41,6 @@ private:
         static node_ptr clone(node_ptr);
         static void remove(node_ptr_ref);
     };
-
-    static bool isRed(node_ptr);
 
     static bool insertToTree(const_ref, node_ptr_ref, int &sign);
     static bool removeFromTree(const_ref, node_ptr_ref, int &sign);
@@ -145,11 +143,6 @@ void RBTree<T>::Node::remove(node_ptr_ref root) {
     root = NULL;
 }
 
-template<class T>
-bool RBTree<T>::isRed(node_ptr root) {
-    return root != NULL && root->red;
-}
-
 /**
  * 不接受空指针。
  * 信号-1表示无变化，0或1表示左或右节点出现冲突：和当前节点同为红色。
@@ -216,13 +209,10 @@ bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r, int &sign) {
     if (c == NULL)
         return false;
     int sign2 = 0;
-    debugTest(c, true);
     if (!removeFromTree(v, c, sign2))
         return false;
-    debugTest(c, true);
     if (sign2 == 1)  // 子节点的黑节点数减少了1
         fix(r, i, sign);
-    debugTest(r, true);
     return true;
 }
 
@@ -238,12 +228,9 @@ void RBTree<T>::rotate(node_ptr_ref r, bool right) {
 template<class T>
 void RBTree<T>::fix(node_ptr_ref r, int i, int &sign) {
     node_ptr_ref other = r->child[1 - i];
-    debugTest(other, true);
-    debugTest(r->child[i], true);
-    assert(other != NULL);
     if (!r->red && !other->red) {  // 黑 /黑\ 黑
         node_ptr a = other->child[1 - i], b = other->child[i];
-        bool ared = isRed(a), bred = isRed(b);
+        bool ared = IS_RED(a), bred = IS_RED(b);
         if (!ared && !bred) {  // 黑/黑\黑 /黑\ 黑
             other->red = true;
             sign = 1;
@@ -274,7 +261,6 @@ void RBTree<T>::fix(node_ptr_ref r, int i, int &sign) {
         other->child[1 - i]->red = false;
         rotate(r, i == 1);
     }
-    debugTest(r, true);
 }
 
 template<class T>
@@ -302,14 +288,9 @@ typename RBTree<T>::node_ptr RBTree<T>::getMaxAndFix(node_ptr_ref r, int &sign) 
 template<class T>
 void RBTree<T>::fixRedBlack(node_ptr_ref r, int i) {
     node_ptr_ref other = r->child[1 - i];
-    debugTest(other, true);
-    debugTest(r->child[i], true);
-    debugTest(r, false);
-    assert(other != NULL);
-    assert(other->red == false);
     node_ptr a = other->child[1 - i], b = other->child[i];
-    if (isRed(b)) {
-        if (isRed(a)) {
+    if (IS_RED(b)) {
+        if (IS_RED(a)) {
             a->red = false;
             other->red = true;
             r->red = false;
@@ -321,7 +302,6 @@ void RBTree<T>::fixRedBlack(node_ptr_ref r, int i) {
         }
     }
     rotate(r, i == 1);
-    debugTest(r, true);
 }
 
 template<class T>
@@ -338,22 +318,18 @@ bool RBTree<T>::findInTree(ref v, node_ptr root) {
 
 template<class T>
 int RBTree<T>::debugTest(node_ptr p, bool fail) {
-#ifdef NDEBUG
-    return 0;
-#else
     int rtn = testAndGetBlacks(p);
     if (fail ^ (rtn >= 0)) {
         int unused = 0;
     }
     return rtn;
-#endif // NDEBUG
 }
 
 template<class T>
 int RBTree<T>::testAndGetBlacks(node_ptr r) {
     if (r == NULL)
         return 0;
-    if (isRed(r) && (isRed(r->child[0]) || isRed(r->child[1])))
+    if (IS_RED(r) && (IS_RED(r->child[0]) || IS_RED(r->child[1])))
         return -(1 << 30);
     int b0 = testAndGetBlacks(r->child[0]);
     if (b0 < 0)
@@ -369,6 +345,8 @@ int RBTree<T>::testAndGetBlacks(node_ptr r) {
         return b1 > b0 ? b0 - b1 : b1 - b0;
     return b0 + (r->red ? 0 : 1);
 }
+
+#undef IS_RED
 
 }
 }
