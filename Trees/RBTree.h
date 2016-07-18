@@ -4,6 +4,8 @@
 #include <cassert>
 #include "BinaryTree.h"
 
+#define NDEBUG
+
 namespace sine {
 namespace tree {
 
@@ -40,14 +42,19 @@ private:
         static void remove(node_ptr_ref);
     };
 
+    static bool isRed(node_ptr);
+
     static bool insertToTree(const_ref, node_ptr_ref, int &sign);
-    //static bool removeFromTree(const_ref, node_ptr_ref);
+    static bool removeFromTree(const_ref, node_ptr_ref, int &sign);
 
     static bool findInTree(ref, node_ptr);
 
     static void rotate(node_ptr_ref, bool right);
-    //static void fillNode(node_ptr_ref);
+    static void fix(node_ptr_ref, int, int &sign);  // 删除时的修复
+    static node_ptr getMaxAndFix(node_ptr_ref, int &sign);
+    static void fixRedBlack(node_ptr_ref, int);  // 删除时的一种情况
 
+    static int debugTest(node_ptr, bool fail);
     static int testAndGetBlacks(node_ptr);
 
     node_ptr root;
@@ -87,8 +94,12 @@ template<class T>
 bool RBTree<T>::remove(const_ref t) {
     if (root == NULL)
         return false;
-    return false;
-    //return removeFromTree(t, root);
+    int unused;
+    if (!removeFromTree(t, root, unused))
+        return false;
+    if (root != NULL)
+        root->red = false;
+    return true;
 }
 
 template<class T>
@@ -135,6 +146,15 @@ void RBTree<T>::Node::remove(node_ptr_ref root) {
 }
 
 template<class T>
+bool RBTree<T>::isRed(node_ptr root) {
+    return root != NULL && root->red;
+}
+
+/**
+ * 不接受空指针。
+ * 信号-1表示无变化，0或1表示左或右节点出现冲突：和当前节点同为红色。
+ */
+template<class T>
 bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r, int &sign) {
     if (v == r->v)
         return false;
@@ -160,32 +180,51 @@ bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r, int &sign) {
     return true;
 }
 
-// template<class T>
-// bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r) {
-//     if (v == r->v) {
-//         node_ptr del = r;
-//         fillNode(r);
-//         delete del;
-//         return true;
-//     }
-//     int a = v < r->v ? 1 : -1;
-//     int i = v < r->v ? 0 : 1;
-//     node_ptr_ref c = r->child[i];
-//     if (c == NULL)
-//         return false;
-//     int BF = c->BF;
-//     if (!removeFromTree(v, c))
-//         return false;
-//     if (c != NULL && (BF == 0 || c->BF != 0))
-//         return true;
-//     r->BF -= a;
-//     if (r->BF * a < -1) {
-//         if (r->child[1 - i]->BF * a > 0)
-//             rotate(r->child[1 - i], i == 0);
-//         rotate(r, i == 1);
-//     }
-//     return true;
-// }
+/**
+ * 不接受空指针。
+ * 信号1表示黑节点数减少1，信号0表示无变化。
+ */
+template<class T>
+bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r, int &sign) {
+    // 当前节点需要删除。优先取左节点最大值来替换。
+    if (v == r->v) {
+        node_ptr del = r;
+        if (del->child[0] != NULL) {
+            int sign2 = 0;
+            r = getMaxAndFix(del->child[0], sign2);
+            r->child[0] = del->child[0];
+            r->child[1] = del->child[1];
+            r->red = del->red;
+            if (sign2)
+                fix(r, 0, sign);
+        }
+        else if (del->child[1] != NULL) {
+            r = del->child[1];
+            r->red = false;
+        }
+        else {
+            if (!del->red)
+                sign = 1;
+            r = NULL;
+        }
+        delete del;
+        return true;
+    }
+    // 向下继续搜索
+    int i = v < r->v ? 0 : 1;
+    node_ptr_ref c = r->child[i];
+    if (c == NULL)
+        return false;
+    int sign2 = 0;
+    debugTest(c, true);
+    if (!removeFromTree(v, c, sign2))
+        return false;
+    debugTest(c, true);
+    if (sign2 == 1)  // 子节点的黑节点数减少了1
+        fix(r, i, sign);
+    debugTest(r, true);
+    return true;
+}
 
 template<class T>
 void RBTree<T>::rotate(node_ptr_ref r, bool right) {
@@ -196,31 +235,94 @@ void RBTree<T>::rotate(node_ptr_ref r, bool right) {
     r = c;
 }
 
-// template<class T>
-// void RBTree<T>::fillNode(node_ptr_ref r) {
-//     int i = 0;
-//     if (r->BF < 0)
-//         i = 1;
-//     else if (r->BF == 0) {
-//         if (r->child[0] == NULL) {
-//             r = NULL;
-//             return;
-//         }
-//         i = rand() % 2;
-//     }
-//     int a = i == 0 ? 1 : -1;
-//     int BF = r->BF;
-//     node_ptr p = r->child[i];
-//     node_ptr_ref c = r->child[i];
-//     int SBF = c->BF;
-//     fillNode(c);
-//     if (c == NULL || (SBF != 0 && c->BF == 0))
-//         BF -= a;
-//     p->BF = BF;
-//     p->child[i] = r->child[i];
-//     p->child[1 - i] = r->child[1 - i];
-//     r = p;
-// }
+template<class T>
+void RBTree<T>::fix(node_ptr_ref r, int i, int &sign) {
+    node_ptr_ref other = r->child[1 - i];
+    debugTest(other, true);
+    debugTest(r->child[i], true);
+    assert(other != NULL);
+    if (!r->red && !other->red) {  // 黑 /黑\ 黑
+        node_ptr a = other->child[1 - i], b = other->child[i];
+        bool ared = isRed(a), bred = isRed(b);
+        if (!ared && !bred) {  // 黑/黑\黑 /黑\ 黑
+            other->red = true;
+            sign = 1;
+            return;
+        }
+        else if (ared && bred) {  // 红/黑\红 /黑\ 黑
+            other->red = true;
+            a->red = false;
+            b->red = false;
+        }
+        else if (bred) {  // 黑/黑\红 /黑\ 黑
+            other->red = true;
+            b->red = false;
+            rotate(other, i == 0);
+        }
+    }
+    if (r->red) {  // 黑 /红\ 黑
+        fixRedBlack(r, i);
+    }
+    else if (other->red) {  // 红 /黑\ 黑
+        other->red = false;
+        r->red = true;
+        rotate(r, i == 1);
+        // 黑 /黑\ 黑/红\黑
+        fixRedBlack(r->child[i], i);
+    }
+    else {  // 红/黑\黑 /黑\ 黑
+        other->child[1 - i]->red = false;
+        rotate(r, i == 1);
+    }
+    debugTest(r, true);
+}
+
+template<class T>
+typename RBTree<T>::node_ptr RBTree<T>::getMaxAndFix(node_ptr_ref r, int &sign) {
+    node_ptr rtn = r;
+    if (r->child[1] == NULL) {
+        if (r->child[0] != NULL) {
+            r = r->child[0];
+            r->red = false;
+        }
+        else {
+            if (!r->red)
+                sign = 1;
+            r = NULL;
+        }
+        return rtn;
+    }
+    int sign2 = 0;
+    rtn = getMaxAndFix(r->child[1], sign2);
+    if (sign2 == 1)
+        fix(r, 1, sign);
+    return rtn;
+}
+
+template<class T>
+void RBTree<T>::fixRedBlack(node_ptr_ref r, int i) {
+    node_ptr_ref other = r->child[1 - i];
+    debugTest(other, true);
+    debugTest(r->child[i], true);
+    debugTest(r, false);
+    assert(other != NULL);
+    assert(other->red == false);
+    node_ptr a = other->child[1 - i], b = other->child[i];
+    if (isRed(b)) {
+        if (isRed(a)) {
+            a->red = false;
+            other->red = true;
+            r->red = false;
+        }
+        else {
+            other->red = true;
+            b->red = false;
+            rotate(other, i == 0);
+        }
+    }
+    rotate(r, i == 1);
+    debugTest(r, true);
+}
 
 template<class T>
 bool RBTree<T>::findInTree(ref v, node_ptr root) {
@@ -235,17 +337,36 @@ bool RBTree<T>::findInTree(ref v, node_ptr root) {
 }
 
 template<class T>
+int RBTree<T>::debugTest(node_ptr p, bool fail) {
+#ifdef NDEBUG
+    return 0;
+#else
+    int rtn = testAndGetBlacks(p);
+    if (fail ^ (rtn >= 0)) {
+        int unused = 0;
+    }
+    return rtn;
+#endif // NDEBUG
+}
+
+template<class T>
 int RBTree<T>::testAndGetBlacks(node_ptr r) {
     if (r == NULL)
         return 0;
+    if (isRed(r) && (isRed(r->child[0]) || isRed(r->child[1])))
+        return -(1 << 30);
     int b0 = testAndGetBlacks(r->child[0]);
-    if (b0 == -1)
-        return -1;
+    if (b0 < 0)
+        return b0;
+    if (b0 > 0 && !(r->child[0]->v < r->v))
+        return -(1 << 29);
     int b1 = testAndGetBlacks(r->child[1]);
-    if (b1 == -1)
-        return -1;
+    if (b1 < 0)
+        return b1;
+    if (b1 > 0 && !(r->v < r->child[1]->v))
+        return -(1 << 29);
     if (b0 != b1)
-        return -1;
+        return b1 > b0 ? b0 - b1 : b1 - b0;
     return b0 + (r->red ? 0 : 1);
 }
 
