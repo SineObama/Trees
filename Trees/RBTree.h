@@ -233,48 +233,47 @@ bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r, int &sign) {
 template<class T>
 typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
 (const_ref v, node_ptr_ref r, int &sign, bool pickMax) {
-    if (!pickMax) {
-        if (v == r->v) {  // 当前节点需要删除。优先取左节点最大值来替换。
-            node_ptr del = r;
-            if (del->child[0] != NULL) {
+    node_ptr rtn = r;
+    int sign2 = 0, i = 0;
+    if (!pickMax) {  // 表示寻找目标节点。
+        if (v == r->v) {  // 找到了节点。
+            if (r->child[0] != NULL) {  // 优先取左树最大值来替换。
                 int sign2 = 0;
-                r = pickFromTree(v, del->child[0], sign2, true);
-                r->child[0] = del->child[0];
-                r->child[1] = del->child[1];
-                r->red = del->red;
+                r = pickFromTree(v, rtn->child[0], sign2, true);
+                r->child[0] = rtn->child[0];
+                r->child[1] = rtn->child[1];
+                r->red = rtn->red;
                 if (sign2)
                     fix(r, 0, sign);
             }
-            else if (del->child[1] != NULL) {
-                r = del->child[1];
+            else if (r->child[1] != NULL) {  // 取右节点来替换。
+                r = r->child[1];
                 r->red = false;
             }
             else {
-                if (!del->red)
+                if (!r->red)
                     sign = 1;
                 r = NULL;
             }
-            return del;
+            rtn->child[0] = NULL;
+            rtn->child[1] = NULL;
+            return rtn;
         }
         // 向下继续搜索
-        int i = v < r->v ? 0 : 1;
+        i = v < r->v ? 0 : 1;
         node_ptr_ref c = r->child[i];
         if (c == NULL)
             return NULL;
-        int sign2 = 0;
-        node_ptr p = pickFromTree(v, c, sign2, false);
-        if (!p)
+        rtn = pickFromTree(v, c, sign2, false);
+        if (!rtn)
             return NULL;
-        if (sign2 == 1)  // 子节点的黑节点数减少了1
-            fix(r, i, sign);
-        return p;
     }
-    else {
-        node_ptr rtn = r;
-        if (r->child[1] == NULL) {
-            if (r->child[0] != NULL) {
+    else {  // 表示寻找最大值
+        if (r->child[1] == NULL) {  // 无右节点，则自己是最大值。
+            if (r->child[0] != NULL) {  // 有左节点（必为红色）
                 r = r->child[0];
                 r->red = false;
+                rtn->child[0] = NULL;
             }
             else {
                 if (!r->red)
@@ -283,12 +282,12 @@ typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
             }
             return rtn;
         }
-        int sign2 = 0;
+        i = 1;
         rtn = pickFromTree(v, r->child[1], sign2, true);
-        if (sign2 == 1)
-            fix(r, 1, sign);
-        return rtn;
     }
+    if (sign2 == 1)  // 子节点的黑节点数减少了1
+        fix(r, i, sign);
+    return rtn;
 }
 
 template<class T>
