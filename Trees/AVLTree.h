@@ -1,13 +1,13 @@
 #pragma once
 
 #include <stdexcept>
-#include "BinaryTree.h"
+#include "SelfBalancedBT.h"
 
 namespace sine {
 namespace tree {
 
 template<class T>
-class AVLTree : public BinaryTree<T> {
+class AVLTree : public SelfBalancedBT<T> {
 
 public:
 
@@ -20,7 +20,7 @@ public:
 
     virtual bool find(ref);
 
-    int test();
+    virtual bool check();
 
 private:
 
@@ -90,8 +90,8 @@ bool AVLTree<T>::find(ref r) {
 }
 
 template<class T>
-int AVLTree<T>::test() {
-    return testAndGetHeight(root);
+bool AVLTree<T>::check() {
+    return testAndGetHeight(root) >= 0;
 }
 
 template<class T>

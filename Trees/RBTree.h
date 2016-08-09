@@ -2,15 +2,13 @@
 
 #include <stdexcept>
 #include <cassert>
-#include "BinaryTree.h"
+#include "SelfBalancedBT.h"
 
 namespace sine {
 namespace tree {
 
-#define IS_RED(r) (r != NULL && r->red)
-
 template<class T>
-class RBTree : public BinaryTree<T> {
+class RBTree : public SelfBalancedBT<T> {
 
 public:
 
@@ -20,11 +18,10 @@ public:
 
     virtual bool insert(const_ref);
     virtual bool remove(const_ref);
-    virtual bool remove1(const_ref);
 
     virtual bool find(ref);
 
-    int test();
+    virtual bool check();
 
 private:
 
@@ -43,6 +40,9 @@ private:
         static void remove(node_ptr_ref);
     };
 
+    bool remove1(const_ref);
+    bool remove2(const_ref);
+
     static bool insertToTree(const_ref, node_ptr_ref, int &sign);
     static bool removeFromTree(const_ref, node_ptr_ref, int &sign);
     static node_ptr pickFromTree(const_ref, node_ptr_ref, int &sign, bool pickMax);
@@ -50,7 +50,7 @@ private:
     static bool findInTree(ref, node_ptr);
 
     static void rotate(node_ptr_ref, bool right);
-    static void fix(node_ptr_ref, int, int &sign);  // 删除时的修复
+    static void fixUnbalance(node_ptr_ref, int, int &sign);  // 删除时的修复
     static node_ptr getMaxAndFix(node_ptr_ref, int &sign);
     static void fixRedBlack(node_ptr_ref, int);  // 删除时的一种情况
 
@@ -60,6 +60,8 @@ private:
     node_ptr root;
 
 };
+
+#define IS_RED(r) (r != NULL && r->red)
 
 template<class T>
 RBTree<T>::RBTree() {
@@ -91,27 +93,8 @@ bool RBTree<T>::insert(const_ref t) {
 }
 
 template<class T>
-bool RBTree<T>::remove1(const_ref t) {
-    if (root == NULL)
-        return false;
-    int unused;
-    if (!removeFromTree(t, root, unused))
-        return false;
-    if (root != NULL)
-        root->red = false;
-    return true;
-}
-
-template<class T>
 bool RBTree<T>::remove(const_ref t) {
-    if (root == NULL)
-        return false;
-    int unused;
-    node_ptr p = pickFromTree(t, root, unused, false);
-    if (root != NULL)
-        root->red = false;
-    delete p;
-    return p != NULL;
+    return remove1(t);
 }
 
 template<class T>
@@ -120,8 +103,8 @@ bool RBTree<T>::find(ref r) {
 }
 
 template<class T>
-int RBTree<T>::test() {
-    return testAndGetBlacks(root);
+bool RBTree<T>::check() {
+    return testAndGetBlacks(root) >= 0;
 }
 
 template<class T>
@@ -155,6 +138,30 @@ void RBTree<T>::Node::remove(node_ptr_ref root) {
     remove(root->child[1]);
     delete root;
     root = NULL;
+}
+
+template<class T>
+bool RBTree<T>::remove1(const_ref t) {
+    if (root == NULL)
+        return false;
+    int unused;
+    node_ptr p = pickFromTree(t, root, unused, false);
+    if (root != NULL)
+        root->red = false;
+    delete p;
+    return p != NULL;
+}
+
+template<class T>
+bool RBTree<T>::remove2(const_ref t) {
+    if (root == NULL)
+        return false;
+    int unused;
+    if (!removeFromTree(t, root, unused))
+        return false;
+    if (root != NULL)
+        root->red = false;
+    return true;
 }
 
 /**
@@ -203,7 +210,7 @@ bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r, int &sign) {
             r->child[1] = del->child[1];
             r->red = del->red;
             if (sign2)
-                fix(r, 0, sign);
+                fixUnbalance(r, 0, sign);
         }
         else if (del->child[1] != NULL) {
             r = del->child[1];
@@ -226,7 +233,7 @@ bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r, int &sign) {
     if (!removeFromTree(v, c, sign2))
         return false;
     if (sign2 == 1)  // 子节点的黑节点数减少了1
-        fix(r, i, sign);
+        fixUnbalance(r, i, sign);
     return true;
 }
 
@@ -234,9 +241,10 @@ template<class T>
 typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
 (const_ref v, node_ptr_ref r, int &sign, bool pickMax) {
     node_ptr rtn = r;
-    int sign2 = 0, i = 0;
+    int sign2 = 0;
+    int i = 0;  // 下探方向
     if (!pickMax) {  // 表示寻找目标节点。
-        if (v == r->v) {  // 找到了节点。
+        if (v == r->v) {  // 找到当前节点。
             if (r->child[0] != NULL) {  // 优先取左树最大值来替换。
                 int sign2 = 0;
                 r = pickFromTree(v, rtn->child[0], sign2, true);
@@ -244,7 +252,7 @@ typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
                 r->child[1] = rtn->child[1];
                 r->red = rtn->red;
                 if (sign2)
-                    fix(r, 0, sign);
+                    fixUnbalance(r, 0, sign);
             }
             else if (r->child[1] != NULL) {  // 取右节点来替换。
                 r = r->child[1];
@@ -261,7 +269,7 @@ typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
         }
         // 向下继续搜索
         i = v < r->v ? 0 : 1;
-        node_ptr_ref c = r->child[i];
+        node_ptr_ref c = r->child[i];  // 下探节点
         if (c == NULL)
             return NULL;
         rtn = pickFromTree(v, c, sign2, false);
@@ -286,7 +294,7 @@ typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
         rtn = pickFromTree(v, r->child[1], sign2, true);
     }
     if (sign2 == 1)  // 子节点的黑节点数减少了1
-        fix(r, i, sign);
+        fixUnbalance(r, i, sign);
     return rtn;
 }
 
@@ -300,7 +308,7 @@ void RBTree<T>::rotate(node_ptr_ref r, bool right) {
 }
 
 template<class T>
-void RBTree<T>::fix(node_ptr_ref r, int i, int &sign) {
+void RBTree<T>::fixUnbalance(node_ptr_ref r, int i, int &sign) {
     node_ptr_ref other = r->child[1 - i];
     if (!r->red && !other->red) {  // 黑 /黑\ 黑
         node_ptr a = other->child[1 - i], b = other->child[i];
@@ -355,7 +363,7 @@ typename RBTree<T>::node_ptr RBTree<T>::getMaxAndFix(node_ptr_ref r, int &sign) 
     int sign2 = 0;
     rtn = getMaxAndFix(r->child[1], sign2);
     if (sign2 == 1)
-        fix(r, 1, sign);
+        fixUnbalance(r, 1, sign);
     return rtn;
 }
 
@@ -405,16 +413,19 @@ int RBTree<T>::testAndGetBlacks(node_ptr r) {
         return 0;
     if (IS_RED(r) && (IS_RED(r->child[0]) || IS_RED(r->child[1])))
         return -(1 << 30);
+
     int b0 = testAndGetBlacks(r->child[0]);
     if (b0 < 0)
         return b0;
     if (b0 > 0 && !(r->child[0]->v < r->v))
         return -(1 << 29);
+
     int b1 = testAndGetBlacks(r->child[1]);
     if (b1 < 0)
         return b1;
     if (b1 > 0 && !(r->v < r->child[1]->v))
         return -(1 << 29);
+
     if (b0 != b1)
         return b1 > b0 ? b0 - b1 : b1 - b0;
     return b0 + (r->red ? 0 : 1);

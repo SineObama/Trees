@@ -26,7 +26,7 @@ public:
 
 int insertNum = 100000, removeNum = 10000, findNum = 100000;
 
-void test(BinaryTree<Container> *t) {
+void test(SelfBalancedBT<Container> *t) {
     Timer timer;
     timer.update();
     for (int i = 0; i < insertNum; i++) {
@@ -46,7 +46,7 @@ void test(BinaryTree<Container> *t) {
         t->find(a);
     }
     cout << "find: " << timer.update() << endl;
-    //cout << t->test();
+    cout << "check: " << t->check() << endl;
 }
 
 int main()
