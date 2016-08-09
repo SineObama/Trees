@@ -139,10 +139,10 @@ template<class T>
 typename RBTree<T>::node_ptr RBTree<T>::Node::clone(node_ptr root) {
     if (root == NULL)
         return NULL;
-    node_ptr rtn = new node_ptr(root->v);
+    node_ptr rtn = new Node(root->v);
     rtn->child[0] = clone(root->child[0]);
     rtn->child[1] = clone(root->child[1]);
-    rtn->BF = root->BF;
+    rtn->red = root->red;
     return rtn;
 }
 

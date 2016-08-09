@@ -33,6 +33,7 @@ void test(SelfBalancedBT<Container> *t) {
         t->insert(Container(rand(), 1));
     }
     cout << "insert: " << timer.update() << endl;
+    cout << "check: " << (t->checkBalance() && t->checkValid()) << endl;
     int count = 0;
     timer.update();
     for (int i = 0; i < removeNum; i++) {
@@ -40,13 +41,13 @@ void test(SelfBalancedBT<Container> *t) {
             count++;
     }
     cout << "remove: " << timer.update() << endl;
+    cout << "check: " << (t->checkBalance() && t->checkValid()) << endl;
     timer.update();
     for (int i = 0; i < findNum; i++) {
         Container a(rand(), 0);
         t->find(a);
     }
     cout << "find: " << timer.update() << endl;
-    cout << "check: " << t->checkBalance() << endl;
 }
 
 int main()
@@ -54,7 +55,8 @@ int main()
     long long curtime = time(NULL);
     srand(curtime & 0xFFFFFFFF);
     cout << "RBTree" << endl;
-    test(&RBTree<Container>());
+    RBTree<Container> a;
+    test(&a);
     cout << "AVLTree" << endl;
     test(&AVLTree<Container>());
     system("pause");
