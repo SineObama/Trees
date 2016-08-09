@@ -1,16 +1,16 @@
 #pragma once
 
-#include "BinaryTree.h"
+#include "BinarySearchTree.h"
 
 namespace sine {
 namespace tree {
 
 template<class T>
-class SelfBalancedBT : public BinaryTree<T> {
+class SelfBalancedBT : public BinarySearchTree<T> {
 
 public:
 
-    virtual bool check() = 0;
+    virtual bool checkBalance() const = 0;
 
 };
 

@@ -18,9 +18,11 @@ public:
     virtual bool insert(const_ref);
     virtual bool remove(const_ref);
 
-    virtual bool find(ref);
+    virtual ptr find(const_ref);
+    virtual const_ptr find(const_ref) const;
 
-    virtual bool check();
+    virtual bool checkValid() const;
+    virtual bool checkBalance() const;
 
 private:
 
@@ -42,11 +44,12 @@ private:
     static bool insertToTree(const_ref, node_ptr_ref);
     static bool removeFromTree(const_ref, node_ptr_ref);
 
-    static bool findInTree(ref, node_ptr);
+    static ptr findInTree(const_ref, node_ptr);
 
     static void rotate(node_ptr_ref, bool right);
     static void fillNode(node_ptr_ref);
 
+    static bool checkValidRecursive(node_ptr);
     static int testAndGetHeight(node_ptr);
 
     node_ptr root;
@@ -85,12 +88,22 @@ bool AVLTree<T>::remove(const_ref t) {
 }
 
 template<class T>
-bool AVLTree<T>::find(ref r) {
+typename AVLTree<T>::ptr AVLTree<T>::find(const_ref r) {
     return findInTree(r, root);
 }
 
 template<class T>
-bool AVLTree<T>::check() {
+typename AVLTree<T>::const_ptr AVLTree<T>::find(const_ref r) const {
+    return findInTree(r, root);
+}
+
+template<class T>
+bool AVLTree<T>::checkValid() const {
+    return checkValidRecursive(root);
+}
+
+template<class T>
+bool AVLTree<T>::checkBalance() const {
     return testAndGetHeight(root) >= 0;
 }
 
@@ -250,15 +263,26 @@ void AVLTree<T>::fillNode(node_ptr_ref r) {
 }
 
 template<class T>
-bool AVLTree<T>::findInTree(ref v, node_ptr root) {
+typename AVLTree<T>::ptr AVLTree<T>::findInTree(const_ref v, node_ptr root) {
     if (root == NULL)
-        return false;
-    if (v == root->v) {
-        v = root->v;
-        return true;
-    }
+        return NULL;
+    if (v == root->v)
+        return &root->v;
     int i = v < root->v ? 0 : 1;
     return findInTree(v, root->child[i]);
+}
+
+template<class T>
+bool AVLTree<T>::checkValidRecursive(node_ptr r) {
+    if (r != NULL) {
+        if (r->child[0] != NULL)
+            if (!(checkValidRecursive(r->child[0]) && r->child[0]->v < r->v))
+                return false;
+        if (r->child[1] != NULL)
+            if (!(checkValidRecursive(r->child[1]) && r->v < r->child[1]->v))
+                return false;
+    }
+    return true;
 }
 
 template<class T>

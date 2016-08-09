@@ -46,7 +46,7 @@ void test(SelfBalancedBT<Container> *t) {
         t->find(a);
     }
     cout << "find: " << timer.update() << endl;
-    cout << "check: " << t->check() << endl;
+    cout << "check: " << t->checkBalance() << endl;
 }
 
 int main()
