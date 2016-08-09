@@ -20,6 +20,7 @@ public:
 
     virtual bool insert(const_ref);
     virtual bool remove(const_ref);
+    virtual bool remove1(const_ref);
 
     virtual bool find(ref);
 
@@ -44,6 +45,7 @@ private:
 
     static bool insertToTree(const_ref, node_ptr_ref, int &sign);
     static bool removeFromTree(const_ref, node_ptr_ref, int &sign);
+    static node_ptr pickFromTree(const_ref, node_ptr_ref, int &sign, bool pickMax);
 
     static bool findInTree(ref, node_ptr);
 
@@ -89,7 +91,7 @@ bool RBTree<T>::insert(const_ref t) {
 }
 
 template<class T>
-bool RBTree<T>::remove(const_ref t) {
+bool RBTree<T>::remove1(const_ref t) {
     if (root == NULL)
         return false;
     int unused;
@@ -98,6 +100,18 @@ bool RBTree<T>::remove(const_ref t) {
     if (root != NULL)
         root->red = false;
     return true;
+}
+
+template<class T>
+bool RBTree<T>::remove(const_ref t) {
+    if (root == NULL)
+        return false;
+    int unused;
+    node_ptr p = pickFromTree(t, root, unused, false);
+    if (root != NULL)
+        root->red = false;
+    delete p;
+    return p != NULL;
 }
 
 template<class T>
@@ -214,6 +228,67 @@ bool RBTree<T>::removeFromTree(const_ref v, node_ptr_ref r, int &sign) {
     if (sign2 == 1)  // 子节点的黑节点数减少了1
         fix(r, i, sign);
     return true;
+}
+
+template<class T>
+typename RBTree<T>::node_ptr RBTree<T>::pickFromTree
+(const_ref v, node_ptr_ref r, int &sign, bool pickMax) {
+    if (!pickMax) {
+        if (v == r->v) {  // 当前节点需要删除。优先取左节点最大值来替换。
+            node_ptr del = r;
+            if (del->child[0] != NULL) {
+                int sign2 = 0;
+                r = pickFromTree(v, del->child[0], sign2, true);
+                r->child[0] = del->child[0];
+                r->child[1] = del->child[1];
+                r->red = del->red;
+                if (sign2)
+                    fix(r, 0, sign);
+            }
+            else if (del->child[1] != NULL) {
+                r = del->child[1];
+                r->red = false;
+            }
+            else {
+                if (!del->red)
+                    sign = 1;
+                r = NULL;
+            }
+            return del;
+        }
+        // 向下继续搜索
+        int i = v < r->v ? 0 : 1;
+        node_ptr_ref c = r->child[i];
+        if (c == NULL)
+            return NULL;
+        int sign2 = 0;
+        node_ptr p = pickFromTree(v, c, sign2, false);
+        if (!p)
+            return NULL;
+        if (sign2 == 1)  // 子节点的黑节点数减少了1
+            fix(r, i, sign);
+        return p;
+    }
+    else {
+        node_ptr rtn = r;
+        if (r->child[1] == NULL) {
+            if (r->child[0] != NULL) {
+                r = r->child[0];
+                r->red = false;
+            }
+            else {
+                if (!r->red)
+                    sign = 1;
+                r = NULL;
+            }
+            return rtn;
+        }
+        int sign2 = 0;
+        rtn = pickFromTree(v, r->child[1], sign2, true);
+        if (sign2 == 1)
+            fix(r, 1, sign);
+        return rtn;
+    }
 }
 
 template<class T>
