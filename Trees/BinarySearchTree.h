@@ -7,7 +7,8 @@ namespace sine {
 namespace tree {
 
 template<class T>
-class BinarySearchTree : public BinaryTree<T>, public SearchTree<T> {
+class BinarySearchTree
+    : public virtual BinaryTree<T>, public virtual SearchTree<T> {
 };
 
 }

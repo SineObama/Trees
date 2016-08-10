@@ -12,21 +12,25 @@
 using namespace sine::tree;
 using namespace std;
 
-int insertNum = 100000, removeNum = 100000, findNum = 100000;
+int insertNum = 1000, removeNum = 1000, findNum = 10;
 
 class Container;
+void handler(Container &);
 void test(SelfBalancedBT<Container> *t);
-int random(int bit = 18);
+int random(int bit = 11);
 
 int main()
 {
     long long curtime = time(NULL);
-    //curtime = 1470814693;
+
     srand(curtime & 0xFFFFFFFF);
     cout << "RBTree" << endl;
     test(&RBTree<Container>());
-    cout << "AVLTree" << endl;
-    test(&AVLTree<Container>());
+
+    //srand(curtime & 0xFFFFFFFF);
+    //cout << "AVLTree" << endl;
+    //test(&AVLTree<Container>());
+
     system("pause");
     return 0;
 }
@@ -43,6 +47,15 @@ public:
     }
 };
 
+void handler(Container &c) {
+    cout << c.i << " ";
+}
+
+void const_handler(const Container &c) {
+    static int i = 0;
+    cout << i++ << " " << c.i << endl;
+}
+
 void test(SelfBalancedBT<Container> *t) {
     Timer timer;
     timer.update();
@@ -52,6 +65,7 @@ void test(SelfBalancedBT<Container> *t) {
     cout << "insert: " << timer.update() << endl;
     cout << "checkValid: " << t->checkValid() << endl;
     cout << "checkBalance: " << t->checkBalance() << endl;
+
     int count = 0;
     timer.update();
     for (int i = 0; i < removeNum; i++) {
@@ -61,6 +75,11 @@ void test(SelfBalancedBT<Container> *t) {
     cout << "remove: " << timer.update() << endl;
     cout << "checkValid: " << t->checkValid() << endl;
     cout << "checkBalance: " << t->checkBalance() << endl;
+
+    const SelfBalancedBT<Container> *tem = t;
+    tem->scan(const_handler, inOrder);
+    cout << endl;
+
     timer.update();
     for (int i = 0; i < findNum; i++) {
         Container a(random(), 0);

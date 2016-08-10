@@ -29,7 +29,6 @@ private:
 
     class Node;
     typedef Node * node_ptr;
-    typedef Node *& node_ptr_ref;
 
     class Node : public BinaryNode {
     public:
@@ -184,10 +183,9 @@ typename RBTree<T>::Bnode_ptr RBTree<T>::removeFromTree
     if (v == _r->v) {  // 找到当前节点。
         if (_r->child[0] != NULL) {  // 优先取左树最大值来替换。
             _r = getMaxAndFix(rtn->child[0], sign2);
-            node_ptr r = dynamic_cast<node_ptr>(_r);
-            r->child[0] = rtn->child[0];
-            r->child[1] = rtn->child[1];
-            r->red = dynamic_cast<node_ptr>(rtn)->red;
+            _r->child[0] = rtn->child[0];
+            _r->child[1] = rtn->child[1];
+            dynamic_cast<node_ptr>(_r)->red = dynamic_cast<node_ptr>(rtn)->red;
             if (sign2 == 1)
                 fixUnbalance(_r, 0, sign);
         }

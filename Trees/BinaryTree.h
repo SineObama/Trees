@@ -5,15 +5,20 @@
 namespace sine {
 namespace tree {
 
+enum Order {
+    preOrder, inOrder, postOrder
+};
+
 template<class T>
-class BinaryTree : public AbstractTree<T> {
+class BinaryTree : public virtual AbstractTree<T> {
 
 public:
 
     typedef void(*handler)(ref);
     typedef void(*const_handler)(const_ref);
 
-    void preOrder(handler);
+    void scan(handler, Order);
+    void scan(const_handler, Order) const;
 
 protected:
 
@@ -36,13 +41,19 @@ protected:
 
 private:
 
-    void recursivePreOrder(handler, Bnode_ptr);
+    void recursiveScan(handler, Bnode_ptr, Order);
+    void recursiveScan(const_handler, Bnode_ptr, Order) const;
 
 };
 
 template<class T>
-void BinaryTree<T>::preOrder(handler h) {
-    recursivePreOrder(h, root);
+void BinaryTree<T>::scan(handler h, Order o) {
+    recursiveScan(h, root, o);
+}
+
+template<class T>
+void BinaryTree<T>::scan(const_handler h, Order o) const {
+    recursiveScan(h, root, o);
 }
 
 template<class T>
@@ -80,12 +91,32 @@ void BinaryTree<T>::BinaryNode::remove(Bnode_ptr root) {
 }
 
 template<class T>
-void BinaryTree<T>::recursivePreOrder(handler h, Bnode_ptr root) {
+void BinaryTree<T>::recursiveScan(handler h, Bnode_ptr root, Order o) {
     if (root == NULL)
         return;
-    h(root);
-    recursivePreOrder(handler, root->child[0]);
-    recursivePreOrder(handler, root->child[1]);
+    if (o == preOrder)
+        h(root->v);
+    recursiveScan(h, root->child[0], o);
+    if (o == inOrder)
+        h(root->v);
+    recursiveScan(h, root->child[1], o);
+    if (o == postOrder)
+        h(root->v);
+}
+
+template<class T>
+void BinaryTree<T>::recursiveScan
+(const_handler h, Bnode_ptr root, Order o) const {
+    if (root == NULL)
+        return;
+    if (o == preOrder)
+        h(root->v);
+    recursiveScan(h, root->child[0], o);
+    if (o == inOrder)
+        h(root->v);
+    recursiveScan(h, root->child[1], o);
+    if (o == postOrder)
+        h(root->v);
 }
 
 }

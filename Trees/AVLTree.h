@@ -27,18 +27,14 @@ public:
 private:
 
     class Node;
-    typedef Node * Bnode_ptr;
-    typedef Node *& Bnode_ptr_ref;
+    typedef Node * node_ptr;
 
-    class Node {
+    class Node : public BinaryNode {
     public:
-        T v;
         int BF;
-        Bnode_ptr child[2];
         Node();
         Node(const_ref);
-        static Bnode_ptr clone(Bnode_ptr);
-        static void remove(Bnode_ptr_ref);
+        virtual Bnode_ptr clone();
     };
 
     static bool insertToTree(const_ref, Bnode_ptr_ref, int &sign);
@@ -51,10 +47,8 @@ private:
     static Bnode_ptr getMaxAndFix(Bnode_ptr_ref, int &sign);
 
     static bool checkValidRecursive(Bnode_ptr);
-    static int debugTest(Bnode_ptr, bool fail);
-    static int testAndGetHeight(Bnode_ptr);
-
-    Bnode_ptr root;
+    static int debugTest(node_ptr, bool fail);
+    static int testAndGetHeight(node_ptr);
 
 };
 
@@ -75,6 +69,7 @@ AVLTree<T>::~AVLTree() {
 
 template<class T>
 bool AVLTree<T>::insert(const_ref t) {
+
     if (root == NULL) {
         root = new Node(t);
         return true;
@@ -110,61 +105,50 @@ bool AVLTree<T>::checkValid() const {
 
 template<class T>
 bool AVLTree<T>::checkBalance() const {
-    return testAndGetHeight(root) >= 0;
+    return testAndGetHeight(dynamic_cast<node_ptr>(root)) >= 0;
 }
 
 template<class T>
 AVLTree<T>::Node::Node()
     : BF(0) {
-    memset(child, NULL, 2 * sizeof(Bnode_ptr));
 }
 
 template<class T>
 AVLTree<T>::Node::Node(const_ref v)
-    : v(v), BF(0) {
-    memset(child, NULL, 2 * sizeof(Bnode_ptr));
+    : BinaryNode(v), BF(0) {
 }
 
 template<class T>
-typename AVLTree<T>::Bnode_ptr AVLTree<T>::Node::clone(Bnode_ptr root) {
-    if (root == NULL)
-        return NULL;
-    Bnode_ptr rtn = new Bnode_ptr(root->v);
-    rtn->child[0] = clone(root->child[0]);
-    rtn->child[1] = clone(root->child[1]);
-    rtn->BF = root->BF;
+typename AVLTree<T>::Bnode_ptr AVLTree<T>::Node::clone() {
+    node_ptr rtn = new Node(v);
+    rtn->BF = BF;
+    if (child[0] != NULL)
+        rtn->child[0] = child[0]->clone();
+    if (child[1] != NULL)
+        rtn->child[1] = child[1]->clone();
     return rtn;
-}
-
-template<class T>
-void AVLTree<T>::Node::remove(Bnode_ptr_ref root) {
-    if (root == NULL)
-        return;
-    remove(root->child[0]);
-    remove(root->child[1]);
-    delete root;
-    root = NULL;
 }
 
 /**
  * 不接受空节点
  */
 template<class T>
-bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref r, int &sign) {
-    if (v == r->v)
+bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref _r, int &sign) {
+    if (v == _r->v)
         return false;
-    int a = v < r->v ? 1 : -1;
-    int i = v < r->v ? 0 : 1;
-    Bnode_ptr_ref c = r->child[i];
-    if (c == NULL) {
+    int a = v < _r->v ? 1 : -1;
+    int i = v < _r->v ? 0 : 1;
+    Bnode_ptr_ref _c = _r->child[i];
+    node_ptr r = dynamic_cast<node_ptr>(_r);
+    if (_c == NULL) {
         if (r->BF == 0)
             sign = 1;
         r->BF += a;
-        c = new Node(v);
+        _c = new Node(v);
         return true;
     }
     int sign2 = 0;
-    if (!insertToTree(v, c, sign2))
+    if (!insertToTree(v, _c, sign2))
         return false;
     if (sign2 == 0)
         return true;
@@ -172,9 +156,9 @@ bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref r, int &sign) {
         sign = 1;
     r->BF += a;
     if (r->BF * a > 1) {
-        if (c->BF * a < 0)
-            rotate(c, i == 1);
-        rotate(r, i == 0);
+        if (dynamic_cast<node_ptr>(_c)->BF * a < 0)
+            rotate(_c, i == 1);
+        rotate(_r, i == 0);
     }
     return true;
 }
@@ -184,39 +168,39 @@ bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref r, int &sign) {
 */
 template<class T>
 typename AVLTree<T>::Bnode_ptr AVLTree<T>::removeFromTree
-(const_ref v, Bnode_ptr_ref r, int &sign) {
-    Bnode_ptr rtn = r;
+(const_ref v, Bnode_ptr_ref _r, int &sign) {
+    Bnode_ptr rtn = _r;
     int sign2 = 0;
-    if (v == r->v) {  // 找到当前节点。
-        if (r->child[0] != NULL) {  // 优先取左树最大值来替换。
-            r = getMaxAndFix(rtn->child[0], sign2);
-            r->child[0] = rtn->child[0];
-            r->child[1] = rtn->child[1];
-            r->BF = rtn->BF;
+    if (v == _r->v) {  // 找到当前节点。
+        if (_r->child[0] != NULL) {  // 优先取左树最大值来替换。
+            _r = getMaxAndFix(rtn->child[0], sign2);
+            _r->child[0] = rtn->child[0];
+            _r->child[1] = rtn->child[1];
+            dynamic_cast<node_ptr>(_r)->BF = dynamic_cast<node_ptr>(rtn)->BF;
             if (sign2 == 1)
-                fixUnbalance(r, 0, sign);
+                fixUnbalance(_r, 0, sign);
         }
-        else if (r->child[1] != NULL) {  // 取右节点来替换。
-            r = r->child[1];
+        else if (_r->child[1] != NULL) {  // 取右节点来替换。
+            _r = _r->child[1];
             sign = 1;
         }
         else {
-            r = NULL;
+            _r = NULL;
             sign = 1;
         }
         rtn->child[0] = NULL;
         rtn->child[1] = NULL;
         return rtn;
     }
-    int i = v < r->v ? 0 : 1;
-    Bnode_ptr_ref c = r->child[i];
-    if (c == NULL)
+    int i = v < _r->v ? 0 : 1;
+    Bnode_ptr_ref _c = _r->child[i];
+    if (_c == NULL)
         return false;
-    rtn = removeFromTree(v, c, sign2);
+    rtn = removeFromTree(v, _c, sign2);
     if (rtn == NULL)
         return false;
     if (sign2 == 1)
-        fixUnbalance(r, i, sign);
+        fixUnbalance(_r, i, sign);
     return rtn;
 }
 
@@ -246,46 +230,48 @@ typename AVLTree<T>::Bnode_ptr AVLTree<T>::removeFromTree
  * m2 - m = Min{0, n2} - 1, n2 - n = Min{0, -m} - 1
  */
 template<class T>
-void AVLTree<T>::rotate(Bnode_ptr_ref r, bool right) {
+void AVLTree<T>::rotate(Bnode_ptr_ref _r, bool right) {
     int i = right ? 1 : 0;
     int a = right ? -1 : 1;
-    Bnode_ptr c = r->child[1 - i];
-    r->child[1 - i] = c->child[i];
-    c->child[i] = r;
-    r->BF += a - (a * c->BF < 0 ? c->BF : 0);
-    c->BF += a + (a * r->BF > 0 ? r->BF : 0);
-    r = c;
+    Bnode_ptr _c = _r->child[1 - i];
+    _r->child[1 - i] = _c->child[i];
+    _c->child[i] = _r;
+    int cBF = dynamic_cast<node_ptr>(_c)->BF;
+    int rBF = 
+        (dynamic_cast<node_ptr>(_r)->BF += a - (a * cBF < 0 ? cBF : 0));
+    dynamic_cast<node_ptr>(_c)->BF += a + (a * rBF > 0 ? rBF : 0);
+    _r = _c;
 }
 
 template<class T>
-void AVLTree<T>::fixUnbalance(Bnode_ptr_ref r, int i, int &sign) {
+void AVLTree<T>::fixUnbalance(Bnode_ptr_ref _r, int i, int &sign) {
     int a = i == 0 ? 1 : -1;
-    r->BF -= a;
-    if (r->BF * a < -1) {
-        if (r->child[1 - i]->BF * a > 0)
-            rotate(r->child[1 - i], i == 0);
-        rotate(r, i == 1);
+    dynamic_cast<node_ptr>(_r)->BF -= a;
+    if (dynamic_cast<node_ptr>(_r)->BF * a < -1) {
+        if (dynamic_cast<node_ptr>(_r->child[1 - i])->BF * a > 0)
+            rotate(_r->child[1 - i], i == 0);
+        rotate(_r, i == 1);
     }
-    if (r->BF == 0)
+    if (dynamic_cast<node_ptr>(_r)->BF == 0)
         sign = 1;
 }
 
 template<class T>
 typename AVLTree<T>::Bnode_ptr AVLTree<T>::getMaxAndFix
-(Bnode_ptr_ref r, int &sign) {
-    Bnode_ptr rtn = r;
+(Bnode_ptr_ref _r, int &sign) {
+    Bnode_ptr rtn = _r;
     int sign2 = 0;
-    if (r->child[1] == NULL) {  // 无右节点，则自己是最大值。
-        if (r->child[0] != NULL)  // 有左节点
-            r = r->child[0];
+    if (_r->child[1] == NULL) {  // 无右节点，则自己是最大值。
+        if (_r->child[0] != NULL)  // 有左节点
+            _r = _r->child[0];
         else
-            r = NULL;
+            _r = NULL;
         sign = 1;
         return rtn;
     }
-    rtn = getMaxAndFix(r->child[1], sign2);
+    rtn = getMaxAndFix(_r->child[1], sign2);
     if (sign2 == 1)  // 子节点的高度减少了1
-        fixUnbalance(r, 1, sign);
+        fixUnbalance(_r, 1, sign);
     return rtn;
 }
 
@@ -314,7 +300,7 @@ bool AVLTree<T>::checkValidRecursive(Bnode_ptr r) {
 }
 
 template<class T>
-int AVLTree<T>::debugTest(Bnode_ptr p, bool fail) {
+int AVLTree<T>::debugTest(node_ptr p, bool fail) {
     int rtn = testAndGetHeight(p);
     if (fail ^ (rtn >= 0)) {
         int unused = 0;
@@ -323,13 +309,13 @@ int AVLTree<T>::debugTest(Bnode_ptr p, bool fail) {
 }
 
 template<class T>
-int AVLTree<T>::testAndGetHeight(Bnode_ptr r) {
+int AVLTree<T>::testAndGetHeight(node_ptr r) {
     if (r == NULL)
         return 0;
-    int h0 = testAndGetHeight(r->child[0]);
+    int h0 = testAndGetHeight(dynamic_cast<node_ptr>(r->child[0]));
     if (h0 == -1)
         return -1;
-    int h1 = testAndGetHeight(r->child[1]);
+    int h1 = testAndGetHeight(dynamic_cast<node_ptr>(r->child[1]));
     if (h1 == -1)
         return -1;
     if (r->BF * r->BF > 1 || r->BF != h0 - h1)

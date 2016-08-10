@@ -6,7 +6,7 @@ namespace sine {
 namespace tree {
 
 template<class T>
-class SelfBalancedBT : public BinarySearchTree<T> {
+class SelfBalancedBT : public virtual BinarySearchTree<T> {
 
 public:
 
