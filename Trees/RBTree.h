@@ -50,6 +50,7 @@ private:
     static void rotate(node_ptr_ref, bool right);
     static void fixUnbalance(node_ptr_ref, int, int &sign);  // 删除时的修复
     static node_ptr getMaxAndFix(node_ptr_ref, int &sign);
+
     static void fixRedBlack(node_ptr_ref, int);  // 删除时的一种情况
 
     static bool checkValidRecursive(node_ptr);
@@ -194,14 +195,14 @@ template<class T>
 typename RBTree<T>::node_ptr RBTree<T>::removeFromTree
 (const_ref v, node_ptr_ref r, int &sign) {
     node_ptr rtn = r;
-            int sign2 = 0;
+    int sign2 = 0;
     if (v == r->v) {  // 找到当前节点。
         if (r->child[0] != NULL) {  // 优先取左树最大值来替换。
             r = getMaxAndFix(rtn->child[0], sign2);
             r->child[0] = rtn->child[0];
             r->child[1] = rtn->child[1];
             r->red = rtn->red;
-            if (sign2)
+            if (sign2 == 1)
                 fixUnbalance(r, 0, sign);
         }
         else if (r->child[1] != NULL) {  // 取右节点来替换。
@@ -223,7 +224,7 @@ typename RBTree<T>::node_ptr RBTree<T>::removeFromTree
     if (c == NULL)
         return NULL;
     rtn = removeFromTree(v, c, sign2);
-    if (!rtn)
+    if (rtn == NULL)
         return NULL;
     if (sign2 == 1)  // 子节点的黑节点数减少了1
         fixUnbalance(r, i, sign);
