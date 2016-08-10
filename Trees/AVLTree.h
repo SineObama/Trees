@@ -50,14 +50,6 @@ private:
     static void fixUnbalance(node_ptr_ref, int, int &sign);  // É¾³ýÊ±µÄÐÞ¸´
     static node_ptr getMaxAndFix(node_ptr_ref, int &sign);
 
-    //static bool insertToTree(const_ref, node_ptr_ref);
-    //static node_ptr removeFromTree(const_ref, node_ptr_ref);
-
-    //static ptr findInTree(const_ref, node_ptr);
-
-    //static void rotate(node_ptr_ref, bool right);
-    //static node_ptr fillNode(node_ptr_ref);
-
     static bool checkValidRecursive(node_ptr);
     static int debugTest(node_ptr, bool fail);
     static int testAndGetHeight(node_ptr);
@@ -201,8 +193,6 @@ typename AVLTree<T>::node_ptr AVLTree<T>::removeFromTree
             r->child[0] = rtn->child[0];
             r->child[1] = rtn->child[1];
             r->BF = rtn->BF;
-            debugTest(r->child[0], true);
-            debugTest(r->child[1], true);
             if (sign2 == 1)
                 fixUnbalance(r, 0, sign);
         }
