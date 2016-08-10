@@ -16,11 +16,12 @@ int insertNum = 100000, removeNum = 100000, findNum = 100000;
 
 class Container;
 void test(SelfBalancedBT<Container> *t);
-int random(int bit = 17);
+int random(int bit = 18);
 
 int main()
 {
     long long curtime = time(NULL);
+    //curtime = 1470814693;
     srand(curtime & 0xFFFFFFFF);
     cout << "RBTree" << endl;
     test(&RBTree<Container>());

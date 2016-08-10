@@ -18,24 +18,25 @@ public:
 protected:
 
     class BinaryNode;
-    typedef BinaryNode * node_ptr;
-    typedef BinaryNode *& node_ptr_ref;
+    typedef BinaryNode * Bnode_ptr;
+    typedef BinaryNode *& Bnode_ptr_ref;
 
     class BinaryNode {
     public:
         T v;
-        node_ptr child[2];
+        Bnode_ptr child[2];
         BinaryNode();
         BinaryNode(const_ref);
-        virtual node_ptr clone();
-        static void remove(node_ptr);
+        virtual ~BinaryNode();
+        virtual Bnode_ptr clone();
+        static void remove(Bnode_ptr);
     };
 
-    node_ptr root;
+    Bnode_ptr root;
 
 private:
 
-    void recursivePreOrder(handler, node_ptr);
+    void recursivePreOrder(handler, Bnode_ptr);
 
 };
 
@@ -46,18 +47,22 @@ void BinaryTree<T>::preOrder(handler h) {
 
 template<class T>
 BinaryTree<T>::BinaryNode::BinaryNode() {
-    memset(child, NULL, 2 * sizeof(node_ptr));
+    memset(child, NULL, 2 * sizeof(Bnode_ptr));
 }
 
 template<class T>
 BinaryTree<T>::BinaryNode::BinaryNode(const_ref v)
     : v(v) {
-    memset(child, NULL, 2 * sizeof(node_ptr));
+    memset(child, NULL, 2 * sizeof(Bnode_ptr));
 }
 
 template<class T>
-typename BinaryTree<T>::node_ptr BinaryTree<T>::BinaryNode::clone() {
-    node_ptr rtn = new BinaryNode(v);
+BinaryTree<T>::BinaryNode::~BinaryNode() {
+}
+
+template<class T>
+typename BinaryTree<T>::Bnode_ptr BinaryTree<T>::BinaryNode::clone() {
+    Bnode_ptr rtn = new BinaryNode(v);
     if (child[0] != NULL)
         rtn->child[0] = child[0]->clone();
     if (child[1] != NULL)
@@ -66,7 +71,7 @@ typename BinaryTree<T>::node_ptr BinaryTree<T>::BinaryNode::clone() {
 }
 
 template<class T>
-void BinaryTree<T>::BinaryNode::remove(node_ptr root) {
+void BinaryTree<T>::BinaryNode::remove(Bnode_ptr root) {
     if (root == NULL)
         return;
     remove(root->child[0]);
@@ -75,7 +80,7 @@ void BinaryTree<T>::BinaryNode::remove(node_ptr root) {
 }
 
 template<class T>
-void BinaryTree<T>::recursivePreOrder(handler h, node_ptr root) {
+void BinaryTree<T>::recursivePreOrder(handler h, Bnode_ptr root) {
     if (root == NULL)
         return;
     h(root);
