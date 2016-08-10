@@ -27,19 +27,16 @@ public:
 
 private:
 
-    class Node;
-    typedef Node * node_ptr;
-    typedef Node *& node_ptr_ref;
+    //class Node;
+    //typedef Node * node_ptr;
+    //typedef Node *& node_ptr_ref;
 
-    class Node {
+    class Node : public BinaryNode {
     public:
-        T v;
         bool red;
-        node_ptr child[2];
         Node();
         Node(const_ref);
-        static node_ptr clone(node_ptr);
-        static void remove(node_ptr_ref);
+        virtual node_ptr clone();
     };
 
     static bool insertToTree(const_ref, node_ptr_ref, int &sign);
@@ -56,8 +53,6 @@ private:
     static bool checkValidRecursive(node_ptr);
     static int debugTest(node_ptr, bool fail);
     static int testAndGetBlacks(node_ptr);
-
-    node_ptr root;
 
 };
 
@@ -81,14 +76,15 @@ RBTree<T>::~RBTree() {
 template<class T>
 bool RBTree<T>::insert(const_ref t) {
     if (root == NULL) {
-        root = new Node(t);
-        root->red = false;
+        Node *newRoot = new Node(t);
+        newRoot->red = false;
+        root = newRoot;
         return true;
     }
     int unused;
     if (!insertToTree(t, root, unused))
         return false;
-    root->red = false;
+    dynamic_cast<Node *>(root)->red = false;
     return true;
 }
 
@@ -99,7 +95,7 @@ bool RBTree<T>::remove(const_ref t) {
     int unused;
     node_ptr p = removeFromTree(t, root, unused);
     if (root != NULL)
-        root->red = false;
+        dynamic_cast<Node *>(root)->red = false;
     delete p;
     return p != NULL;
 }
@@ -127,34 +123,22 @@ bool RBTree<T>::checkBalance() const {
 template<class T>
 RBTree<T>::Node::Node()
     : red(true) {
-    memset(child, NULL, 2 * sizeof(node_ptr));
 }
 
 template<class T>
 RBTree<T>::Node::Node(const_ref v)
-    : v(v), red(true) {
-    memset(child, NULL, 2 * sizeof(node_ptr));
+    : BinaryNode(v), red(true) {
 }
 
 template<class T>
-typename RBTree<T>::node_ptr RBTree<T>::Node::clone(node_ptr root) {
-    if (root == NULL)
-        return NULL;
-    node_ptr rtn = new Node(root->v);
-    rtn->child[0] = clone(root->child[0]);
-    rtn->child[1] = clone(root->child[1]);
-    rtn->red = root->red;
+typename RBTree<T>::node_ptr RBTree<T>::Node::clone() {
+    node_ptr rtn = new Node(v);
+    rtn->red = red;
+    if (child[0] != NULL)
+        rtn->child[0] = child[0]->clone();
+    if (child[1] != NULL)
+        rtn->child[1] = child[1]->clone();
     return rtn;
-}
-
-template<class T>
-void RBTree<T>::Node::remove(node_ptr_ref root) {
-    if (root == NULL)
-        return;
-    remove(root->child[0]);
-    remove(root->child[1]);
-    delete root;
-    root = NULL;
 }
 
 /**
@@ -162,11 +146,13 @@ void RBTree<T>::Node::remove(node_ptr_ref root) {
  * 信号-1表示无变化，0或1表示左或右节点出现冲突：和当前节点同为红色。
  */
 template<class T>
-bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r, int &sign) {
+bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref _r, int &sign) {
+    Node *r = dynamic_cast<Node *>(_r);
     if (v == r->v)
         return false;
     int i = v < r->v ? 0 : 1;
-    node_ptr_ref c = r->child[i];
+    node_ptr_ref _c = r->child[i];
+    Node *c = dynamic_cast<Node *>(_c);
     if (c == NULL) {
         c = new Node(v);
         if (r->red)
@@ -174,13 +160,13 @@ bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r, int &sign) {
         return true;
     }
     int sign2 = -1;
-    if (!insertToTree(v, c, sign2))
+    if (!insertToTree(v, _c, sign2))
         return false;
     if (sign2 != -1) {
         if (sign2 != i)
-            rotate(c, i == 1);
-        c->child[i]->red = false;
-        rotate(r, i == 0);
+            rotate(_c, i == 1);
+        dynamic_cast<Node *>(c->child[i])->red = false;
+        rotate(_r, i == 0);
     }
     else if (r->red && c->red)
         sign = i;
@@ -193,20 +179,21 @@ bool RBTree<T>::insertToTree(const_ref v, node_ptr_ref r, int &sign) {
  */
 template<class T>
 typename RBTree<T>::node_ptr RBTree<T>::removeFromTree
-(const_ref v, node_ptr_ref r, int &sign) {
-    node_ptr rtn = r;
+(const_ref v, node_ptr_ref _r, int &sign) {
+    Node *r = dynamic_cast<Node *>(_r);
+    Node *rtn = r;
     int sign2 = 0;
     if (v == r->v) {  // 找到当前节点。
         if (r->child[0] != NULL) {  // 优先取左树最大值来替换。
-            r = getMaxAndFix(rtn->child[0], sign2);
+            r = dynamic_cast<Node *>(getMaxAndFix(rtn->child[0], sign2));
             r->child[0] = rtn->child[0];
             r->child[1] = rtn->child[1];
             r->red = rtn->red;
             if (sign2 == 1)
-                fixUnbalance(r, 0, sign);
+                fixUnbalance(_r, 0, sign);
         }
         else if (r->child[1] != NULL) {  // 取右节点来替换。
-            r = r->child[1];
+            r = dynamic_cast<Node *>(r->child[1]);
             r->red = false;
         }
         else {
@@ -223,11 +210,11 @@ typename RBTree<T>::node_ptr RBTree<T>::removeFromTree
     node_ptr_ref c = r->child[i];  // 下探节点
     if (c == NULL)
         return NULL;
-    rtn = removeFromTree(v, c, sign2);
+    rtn = dynamic_cast<Node *>(removeFromTree(v, c, sign2));
     if (rtn == NULL)
         return NULL;
     if (sign2 == 1)  // 子节点的黑节点数减少了1
-        fixUnbalance(r, i, sign);
+        fixUnbalance(_r, i, sign);
     return rtn;
 }
 
@@ -355,7 +342,7 @@ int RBTree<T>::debugTest(node_ptr p, bool fail) {
 }
 
 template<class T>
-int RBTree<T>::testAndGetBlacks(node_ptr r) {
+int RBTree<T>::testAndGetBlacks(Node *r) {
     if (r == NULL)
         return 0;
     if (IS_RED(r) && (IS_RED(r->child[0]) || IS_RED(r->child[1])))
