@@ -7,22 +7,17 @@
 namespace sine {
 namespace tree {
 
+/**
+ * 红黑树
+ */
 template<class T>
 class RBTree : public SelfBalancedBT<T> {
 
 public:
 
-    RBTree();
-    RBTree(const RBTree<T> &);
-    virtual ~RBTree();
-
     virtual bool insert(const_ref);
     virtual bool remove(const_ref);
 
-    virtual ptr find(const_ref);
-    virtual const_ptr find(const_ref) const;
-
-    virtual bool checkValid() const;
     virtual bool checkBalance() const;
 
 private:
@@ -38,40 +33,21 @@ private:
         virtual Bnode_ptr clone();
     };
 
-    static bool insertToTree(const_ref, Bnode_ptr_ref, int &sign);
+    static Bnode_ptr insertToTree(const_ref, Bnode_ptr_ref, int &sign);
     static Bnode_ptr removeFromTree(const_ref, Bnode_ptr_ref, int &sign);
-
-    static ptr findInTree(const_ref, Bnode_ptr);
 
     static void rotate(Bnode_ptr_ref, bool right);
     static void fixUnbalance(Bnode_ptr_ref, int, int &sign);  // 删除时的修复
-    static Bnode_ptr getMaxAndFix(Bnode_ptr_ref, int &sign);
+    static Bnode_ptr pickMaxAndFix(Bnode_ptr_ref, int &sign);
 
     static void fixRedBlack(Bnode_ptr_ref, int);  // 删除时的一种情况
 
-    static bool checkValidRecursive(Bnode_ptr);
     static int debugTest(node_ptr, bool fail);
     static int testAndGetBlacks(node_ptr);
 
 };
 
 #define IS_RED(r) (r != NULL && r->red)
-
-template<class T>
-RBTree<T>::RBTree() {
-    root = NULL;
-}
-
-template<class T>
-RBTree<T>::RBTree(const RBTree<T> &o) {
-    if (o.root != NULL)
-        root = o.root->clone();
-}
-
-template<class T>
-RBTree<T>::~RBTree() {
-    Node::remove(root);
-}
 
 template<class T>
 bool RBTree<T>::insert(const_ref t) {
@@ -82,7 +58,7 @@ bool RBTree<T>::insert(const_ref t) {
         return true;
     }
     int unused;
-    if (!insertToTree(t, root, unused))
+    if (insertToTree(t, root, unused) == NULL)
         return false;
     dynamic_cast<node_ptr>(root)->red = false;
     return true;
@@ -98,21 +74,6 @@ bool RBTree<T>::remove(const_ref t) {
         dynamic_cast<node_ptr>(root)->red = false;
     delete p;
     return p != NULL;
-}
-
-template<class T>
-typename RBTree<T>::ptr RBTree<T>::find(const_ref r) {
-    return findInTree(r, root);
-}
-
-template<class T>
-typename RBTree<T>::const_ptr RBTree<T>::find(const_ref r) const {
-    return findInTree(r, root);
-}
-
-template<class T>
-bool RBTree<T>::checkValid() const {
-    return checkValidRecursive(root);
 }
 
 template<class T>
@@ -146,29 +107,32 @@ typename RBTree<T>::Bnode_ptr RBTree<T>::Node::clone() {
  * 信号-1表示无变化，0或1表示左或右节点出现冲突：和当前节点同为红色。
  */
 template<class T>
-bool RBTree<T>::insertToTree(const_ref v, Bnode_ptr_ref _r, int &sign) {
+typename RBTree<T>::Bnode_ptr RBTree<T>::insertToTree
+(const_ref v, Bnode_ptr_ref _r, int &sign) {
     if (v == _r->v)
-        return false;
+        return NULL;
     int i = v < _r->v ? 0 : 1;
     Bnode_ptr_ref _c = _r->child[i];
     if (_c == NULL) {
         _c = new Node(v);
         if (dynamic_cast<node_ptr>(_r)->red)
             sign = i;
-        return true;
+        return _c;
     }
     int sign2 = -1;
-    if (!insertToTree(v, _c, sign2))
-        return false;
+    Bnode_ptr p = insertToTree(v, _c, sign2);
+    if (p == NULL)
+        return NULL;
     if (sign2 != -1) {
         if (sign2 != i)
             rotate(_c, i == 1);
         dynamic_cast<node_ptr>(_c->child[i])->red = false;
         rotate(_r, i == 0);
     }
-    else if (dynamic_cast<node_ptr>(_r)->red && dynamic_cast<node_ptr>(_c)->red)
+    else if (dynamic_cast<node_ptr>(_r)->red &&
+             dynamic_cast<node_ptr>(_c)->red)
         sign = i;
-    return true;
+    return p;
 }
 
 /**
@@ -182,10 +146,11 @@ typename RBTree<T>::Bnode_ptr RBTree<T>::removeFromTree
     int sign2 = 0;
     if (v == _r->v) {  // 找到当前节点。
         if (_r->child[0] != NULL) {  // 优先取左树最大值来替换。
-            _r = getMaxAndFix(rtn->child[0], sign2);
+            _r = pickMaxAndFix(rtn->child[0], sign2);
             _r->child[0] = rtn->child[0];
             _r->child[1] = rtn->child[1];
-            dynamic_cast<node_ptr>(_r)->red = dynamic_cast<node_ptr>(rtn)->red;
+            dynamic_cast<node_ptr>(_r)->red = 
+                dynamic_cast<node_ptr>(rtn)->red;
             if (sign2 == 1)
                 fixUnbalance(_r, 0, sign);
         }
@@ -269,7 +234,8 @@ void RBTree<T>::fixUnbalance(Bnode_ptr_ref _r, int i, int &sign) {
 }
 
 template<class T>
-typename RBTree<T>::Bnode_ptr RBTree<T>::getMaxAndFix(Bnode_ptr_ref _r, int &sign) {
+typename RBTree<T>::Bnode_ptr RBTree<T>::pickMaxAndFix
+(Bnode_ptr_ref _r, int &sign) {
     Bnode_ptr rtn = _r;
     int sign2 = 0;
     if (_r->child[1] == NULL) {  // 无右节点，则自己是最大值。
@@ -284,7 +250,7 @@ typename RBTree<T>::Bnode_ptr RBTree<T>::getMaxAndFix(Bnode_ptr_ref _r, int &sig
         }
         return rtn;
     }
-    rtn = getMaxAndFix(_r->child[1], sign2);
+    rtn = pickMaxAndFix(_r->child[1], sign2);
     if (sign2 == 1)  // 子节点的黑节点数减少了1
         fixUnbalance(_r, 1, sign);
     return rtn;
@@ -309,29 +275,6 @@ void RBTree<T>::fixRedBlack(Bnode_ptr_ref _r, int i) {
         }
     }
     rotate(_r, i == 1);
-}
-
-template<class T>
-typename RBTree<T>::ptr RBTree<T>::findInTree(const_ref v, Bnode_ptr root) {
-    if (root == NULL)
-        return NULL;
-    if (v == root->v)
-        return &root->v;
-    int i = v < root->v ? 0 : 1;
-    return findInTree(v, root->child[i]);
-}
-
-template<class T>
-bool RBTree<T>::checkValidRecursive(Bnode_ptr _r) {
-    if (_r != NULL) {
-        if (_r->child[0] != NULL)
-            if (!(checkValidRecursive(_r->child[0]) && _r->child[0]->v < _r->v))
-                return false;
-        if (_r->child[1] != NULL)
-            if (!(checkValidRecursive(_r->child[1]) && _r->v < _r->child[1]->v))
-                return false;
-    }
-    return true;
 }
 
 template<class T>

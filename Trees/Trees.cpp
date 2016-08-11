@@ -16,6 +16,7 @@ int insertNum = 100000, removeNum = 100000, findNum = 100000;
 
 class Container;
 void handler(Container &);
+void const_handler(const Container &c);
 void test(SelfBalancedBT<Container> *t);
 int random(int bit = 18);
 
@@ -23,13 +24,21 @@ int main()
 {
     long long curtime = time(NULL);
 
-    srand(curtime & 0xFFFFFFFF);
-    cout << "RBTree" << endl;
-    test(&RBTree<Container>());
-
-    srand(curtime & 0xFFFFFFFF);
-    cout << "AVLTree" << endl;
-    test(&AVLTree<Container>());
+    {
+        srand(curtime & 0xFFFFFFFF);
+        cout << "RBTree" << endl;
+        RBTree<Container> a;
+        test(&a);
+        RBTree<Container> b(a);
+    }
+    
+    {
+        srand(curtime & 0xFFFFFFFF);
+        cout << "AVLTree" << endl;
+        AVLTree<Container> a;
+        test(&AVLTree<Container>());
+        AVLTree<Container> b(a);
+    }
 
     system("pause");
     return 0;

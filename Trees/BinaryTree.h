@@ -14,6 +14,10 @@ class BinaryTree : public virtual AbstractTree<T> {
 
 public:
 
+    BinaryTree();
+    BinaryTree(const BinaryTree<T> &);
+    virtual ~BinaryTree();
+
     typedef void(*handler)(ref);
     typedef void(*const_handler)(const_ref);
 
@@ -34,7 +38,7 @@ protected:
         BinaryNode(const_ref);
         virtual ~BinaryNode();
         virtual Bnode_ptr clone();
-        static void remove(Bnode_ptr);
+        static void removeBT(Bnode_ptr);
     };
 
     Bnode_ptr root;
@@ -45,6 +49,22 @@ private:
     void recursiveScan(const_handler, Bnode_ptr, Traversal) const;
 
 };
+
+template<class T>
+BinaryTree<T>::BinaryTree() {
+    root = NULL;
+}
+
+template<class T>
+BinaryTree<T>::BinaryTree(const BinaryTree<T> &o) {
+    if (o.root != NULL)
+        root = o.root->clone();
+}
+
+template<class T>
+BinaryTree<T>::~BinaryTree() {
+    BinaryNode::removeBT(root);
+}
 
 template<class T>
 void BinaryTree<T>::traverse(handler h, Traversal o) {
@@ -82,11 +102,11 @@ typename BinaryTree<T>::Bnode_ptr BinaryTree<T>::BinaryNode::clone() {
 }
 
 template<class T>
-void BinaryTree<T>::BinaryNode::remove(Bnode_ptr root) {
+void BinaryTree<T>::BinaryNode::removeBT(Bnode_ptr root) {
     if (root == NULL)
         return;
-    remove(root->child[0]);
-    remove(root->child[1]);
+    removeBT(root->child[0]);
+    removeBT(root->child[1]);
     delete root;
 }
 

@@ -11,17 +11,9 @@ class AVLTree : public SelfBalancedBT<T> {
 
 public:
 
-    AVLTree();
-    AVLTree(const AVLTree<T> &);
-    virtual ~AVLTree();
-
     virtual bool insert(const_ref);
     virtual bool remove(const_ref);
 
-    virtual ptr find(const_ref);
-    virtual const_ptr find(const_ref) const;
-
-    virtual bool checkValid() const;
     virtual bool checkBalance() const;
 
 private:
@@ -37,45 +29,26 @@ private:
         virtual Bnode_ptr clone();
     };
 
-    static bool insertToTree(const_ref, Bnode_ptr_ref, int &sign);
+    static Bnode_ptr insertToTree(const_ref, Bnode_ptr_ref, int &sign);
     static Bnode_ptr removeFromTree(const_ref, Bnode_ptr_ref, int &sign);
-
-    static ptr findInTree(const_ref, Bnode_ptr);
 
     static void rotate(Bnode_ptr_ref, bool right);
     static void fixUnbalance(Bnode_ptr_ref, int, int &sign);  // 删除时的修复
-    static Bnode_ptr getMaxAndFix(Bnode_ptr_ref, int &sign);
+    static Bnode_ptr pickMaxAndFix(Bnode_ptr_ref, int &sign);
 
-    static bool checkValidRecursive(Bnode_ptr);
     static int debugTest(node_ptr, bool fail);
     static int testAndGetHeight(node_ptr);
 
 };
 
 template<class T>
-AVLTree<T>::AVLTree() {
-    root = NULL;
-}
-
-template<class T>
-AVLTree<T>::AVLTree(const AVLTree<T> &o) {
-    root = Node::clone(o.root);
-}
-
-template<class T>
-AVLTree<T>::~AVLTree() {
-    Node::remove(root);
-}
-
-template<class T>
 bool AVLTree<T>::insert(const_ref t) {
-
     if (root == NULL) {
         root = new Node(t);
         return true;
     }
     int unused = 0;
-    return insertToTree(t, root, unused);
+    return insertToTree(t, root, unused) != NULL;
 }
 
 template<class T>
@@ -86,21 +59,6 @@ bool AVLTree<T>::remove(const_ref t) {
     Bnode_ptr del = removeFromTree(t, root, unused);
     delete del;
     return del != NULL;
-}
-
-template<class T>
-typename AVLTree<T>::ptr AVLTree<T>::find(const_ref r) {
-    return findInTree(r, root);
-}
-
-template<class T>
-typename AVLTree<T>::const_ptr AVLTree<T>::find(const_ref r) const {
-    return findInTree(r, root);
-}
-
-template<class T>
-bool AVLTree<T>::checkValid() const {
-    return checkValidRecursive(root);
 }
 
 template<class T>
@@ -133,9 +91,10 @@ typename AVLTree<T>::Bnode_ptr AVLTree<T>::Node::clone() {
  * 不接受空节点
  */
 template<class T>
-bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref _r, int &sign) {
+typename AVLTree<T>::Bnode_ptr AVLTree<T>::insertToTree
+(const_ref v, Bnode_ptr_ref _r, int &sign) {
     if (v == _r->v)
-        return false;
+        return NULL;
     int a = v < _r->v ? 1 : -1;
     int i = v < _r->v ? 0 : 1;
     Bnode_ptr_ref _c = _r->child[i];
@@ -145,13 +104,14 @@ bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref _r, int &sign) {
             sign = 1;
         r->BF += a;
         _c = new Node(v);
-        return true;
+        return _c;
     }
     int sign2 = 0;
-    if (!insertToTree(v, _c, sign2))
-        return false;
+    Bnode_ptr p = insertToTree(v, _c, sign2);
+    if (p == NULL)
+        return NULL;
     if (sign2 == 0)
-        return true;
+        return p;
     if (r->BF == 0)
         sign = 1;
     r->BF += a;
@@ -160,7 +120,7 @@ bool AVLTree<T>::insertToTree(const_ref v, Bnode_ptr_ref _r, int &sign) {
             rotate(_c, i == 1);
         rotate(_r, i == 0);
     }
-    return true;
+    return p;
 }
 
 /**
@@ -173,10 +133,11 @@ typename AVLTree<T>::Bnode_ptr AVLTree<T>::removeFromTree
     int sign2 = 0;
     if (v == _r->v) {  // 找到当前节点。
         if (_r->child[0] != NULL) {  // 优先取左树最大值来替换。
-            _r = getMaxAndFix(rtn->child[0], sign2);
+            _r = pickMaxAndFix(rtn->child[0], sign2);
             _r->child[0] = rtn->child[0];
             _r->child[1] = rtn->child[1];
-            dynamic_cast<node_ptr>(_r)->BF = dynamic_cast<node_ptr>(rtn)->BF;
+            dynamic_cast<node_ptr>(_r)->BF = 
+                dynamic_cast<node_ptr>(rtn)->BF;
             if (sign2 == 1)
                 fixUnbalance(_r, 0, sign);
         }
@@ -257,7 +218,7 @@ void AVLTree<T>::fixUnbalance(Bnode_ptr_ref _r, int i, int &sign) {
 }
 
 template<class T>
-typename AVLTree<T>::Bnode_ptr AVLTree<T>::getMaxAndFix
+typename AVLTree<T>::Bnode_ptr AVLTree<T>::pickMaxAndFix
 (Bnode_ptr_ref _r, int &sign) {
     Bnode_ptr rtn = _r;
     int sign2 = 0;
@@ -269,34 +230,10 @@ typename AVLTree<T>::Bnode_ptr AVLTree<T>::getMaxAndFix
         sign = 1;
         return rtn;
     }
-    rtn = getMaxAndFix(_r->child[1], sign2);
+    rtn = pickMaxAndFix(_r->child[1], sign2);
     if (sign2 == 1)  // 子节点的高度减少了1
         fixUnbalance(_r, 1, sign);
     return rtn;
-}
-
-template<class T>
-typename AVLTree<T>::ptr AVLTree<T>::findInTree
-(const_ref v, Bnode_ptr root) {
-    if (root == NULL)
-        return NULL;
-    if (v == root->v)
-        return &root->v;
-    int i = v < root->v ? 0 : 1;
-    return findInTree(v, root->child[i]);
-}
-
-template<class T>
-bool AVLTree<T>::checkValidRecursive(Bnode_ptr r) {
-    if (r != NULL) {
-        if (r->child[0] != NULL)
-            if (!(checkValidRecursive(r->child[0]) && r->child[0]->v < r->v))
-                return false;
-        if (r->child[1] != NULL)
-            if (!(checkValidRecursive(r->child[1]) && r->v < r->child[1]->v))
-                return false;
-    }
-    return true;
 }
 
 template<class T>
