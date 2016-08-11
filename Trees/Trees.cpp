@@ -12,12 +12,12 @@
 using namespace sine::tree;
 using namespace std;
 
-int insertNum = 1000, removeNum = 1000, findNum = 10;
+int insertNum = 100000, removeNum = 100000, findNum = 100000;
 
 class Container;
 void handler(Container &);
 void test(SelfBalancedBT<Container> *t);
-int random(int bit = 11);
+int random(int bit = 18);
 
 int main()
 {
@@ -27,9 +27,9 @@ int main()
     cout << "RBTree" << endl;
     test(&RBTree<Container>());
 
-    //srand(curtime & 0xFFFFFFFF);
-    //cout << "AVLTree" << endl;
-    //test(&AVLTree<Container>());
+    srand(curtime & 0xFFFFFFFF);
+    cout << "AVLTree" << endl;
+    test(&AVLTree<Container>());
 
     system("pause");
     return 0;
@@ -76,9 +76,9 @@ void test(SelfBalancedBT<Container> *t) {
     cout << "checkValid: " << t->checkValid() << endl;
     cout << "checkBalance: " << t->checkBalance() << endl;
 
-    const SelfBalancedBT<Container> *tem = t;
-    tem->scan(const_handler, inOrder);
-    cout << endl;
+    //const SelfBalancedBT<Container> *tem = t;
+    //tem->scan(const_handler, inOrder);
+    //cout << endl;
 
     timer.update();
     for (int i = 0; i < findNum; i++) {
