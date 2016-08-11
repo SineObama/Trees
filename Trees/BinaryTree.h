@@ -17,8 +17,8 @@ public:
     typedef void(*handler)(ref);
     typedef void(*const_handler)(const_ref);
 
-    void scan(handler, Traversal);
-    void scan(const_handler, Traversal) const;
+    void traverse(handler, Traversal);
+    void traverse(const_handler, Traversal) const;
 
 protected:
 
@@ -47,12 +47,12 @@ private:
 };
 
 template<class T>
-void BinaryTree<T>::scan(handler h, Traversal o) {
+void BinaryTree<T>::traverse(handler h, Traversal o) {
     recursiveScan(h, root, o);
 }
 
 template<class T>
-void BinaryTree<T>::scan(const_handler h, Traversal o) const {
+void BinaryTree<T>::traverse(const_handler h, Traversal o) const {
     recursiveScan(h, root, o);
 }
 

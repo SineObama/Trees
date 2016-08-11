@@ -77,7 +77,7 @@ void test(SelfBalancedBT<Container> *t) {
     cout << "checkBalance: " << t->checkBalance() << endl;
 
     //const SelfBalancedBT<Container> *tem = t;
-    //tem->scan(const_handler, inOrder);
+    //tem->traverse(const_handler, inOrder);
     //cout << endl;
 
     timer.update();
