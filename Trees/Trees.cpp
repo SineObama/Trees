@@ -12,6 +12,29 @@
 using namespace sine::tree;
 using namespace std;
 
+int insertNum = 1000, removeNum = 1000, findNum = 10;
+
+class Container;
+void handler(Container &);
+void test(SelfBalancedBT<Container> *t);
+int random(int bit = 11);
+
+int main()
+{
+    long long curtime = time(NULL);
+
+    srand(curtime & 0xFFFFFFFF);
+    cout << "RBTree" << endl;
+    test(&RBTree<Container>());
+
+    //srand(curtime & 0xFFFFFFFF);
+    //cout << "AVLTree" << endl;
+    //test(&AVLTree<Container>());
+
+    system("pause");
+    return 0;
+}
+
 class Container {
 public:
     int i, d;
@@ -24,39 +47,52 @@ public:
     }
 };
 
-int insertNum = 100000, removeNum = 10000, findNum = 100000;
+void handler(Container &c) {
+    cout << c.i << " ";
+}
+
+void const_handler(const Container &c) {
+    static int i = 0;
+    cout << i++ << " " << c.i << endl;
+}
 
 void test(SelfBalancedBT<Container> *t) {
     Timer timer;
     timer.update();
     for (int i = 0; i < insertNum; i++) {
-        t->insert(Container(rand(), 1));
+        t->insert(Container(random(), 1));
     }
     cout << "insert: " << timer.update() << endl;
+    cout << "checkValid: " << t->checkValid() << endl;
+    cout << "checkBalance: " << t->checkBalance() << endl;
+
     int count = 0;
     timer.update();
     for (int i = 0; i < removeNum; i++) {
-        if (t->remove(Container(rand(), 1)))
+        if (t->remove(Container(random(), 1)))
             count++;
     }
     cout << "remove: " << timer.update() << endl;
+    cout << "checkValid: " << t->checkValid() << endl;
+    cout << "checkBalance: " << t->checkBalance() << endl;
+
+    const SelfBalancedBT<Container> *tem = t;
+    tem->scan(const_handler, inOrder);
+    cout << endl;
+
     timer.update();
     for (int i = 0; i < findNum; i++) {
-        Container a(rand(), 0);
+        Container a(random(), 0);
         t->find(a);
     }
     cout << "find: " << timer.update() << endl;
-    cout << "check: " << t->checkBalance() << endl;
 }
 
-int main()
-{
-    long long curtime = time(NULL);
-    srand(curtime & 0xFFFFFFFF);
-    cout << "RBTree" << endl;
-    test(&RBTree<Container>());
-    cout << "AVLTree" << endl;
-    test(&AVLTree<Container>());
-    system("pause");
-    return 0;
+int random(int bit) {
+    static const int s = (1 << 15) - 1;
+    if (bit < 16)
+        return rand() & (s >> (15 - bit));
+    if (bit < 31)
+        return (rand() & s) | ((rand() & (s >> (30 - bit))) << 15);
+    throw;
 }

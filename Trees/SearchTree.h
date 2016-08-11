@@ -6,7 +6,7 @@ namespace sine {
 namespace tree {
 
 template<class T>
-class SearchTree : public AbstractTree<T> {
+class SearchTree : public virtual AbstractTree<T> {
 
 public:
 
