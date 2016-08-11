@@ -5,7 +5,7 @@
 namespace sine {
 namespace tree {
 
-enum Order {
+enum Traversal {
     preOrder, inOrder, postOrder
 };
 
@@ -17,8 +17,8 @@ public:
     typedef void(*handler)(ref);
     typedef void(*const_handler)(const_ref);
 
-    void scan(handler, Order);
-    void scan(const_handler, Order) const;
+    void scan(handler, Traversal);
+    void scan(const_handler, Traversal) const;
 
 protected:
 
@@ -41,18 +41,18 @@ protected:
 
 private:
 
-    void recursiveScan(handler, Bnode_ptr, Order);
-    void recursiveScan(const_handler, Bnode_ptr, Order) const;
+    void recursiveScan(handler, Bnode_ptr, Traversal);
+    void recursiveScan(const_handler, Bnode_ptr, Traversal) const;
 
 };
 
 template<class T>
-void BinaryTree<T>::scan(handler h, Order o) {
+void BinaryTree<T>::scan(handler h, Traversal o) {
     recursiveScan(h, root, o);
 }
 
 template<class T>
-void BinaryTree<T>::scan(const_handler h, Order o) const {
+void BinaryTree<T>::scan(const_handler h, Traversal o) const {
     recursiveScan(h, root, o);
 }
 
@@ -91,7 +91,7 @@ void BinaryTree<T>::BinaryNode::remove(Bnode_ptr root) {
 }
 
 template<class T>
-void BinaryTree<T>::recursiveScan(handler h, Bnode_ptr root, Order o) {
+void BinaryTree<T>::recursiveScan(handler h, Bnode_ptr root, Traversal o) {
     if (root == NULL)
         return;
     if (o == preOrder)
@@ -106,7 +106,7 @@ void BinaryTree<T>::recursiveScan(handler h, Bnode_ptr root, Order o) {
 
 template<class T>
 void BinaryTree<T>::recursiveScan
-(const_handler h, Bnode_ptr root, Order o) const {
+(const_handler h, Bnode_ptr root, Traversal o) const {
     if (root == NULL)
         return;
     if (o == preOrder)
