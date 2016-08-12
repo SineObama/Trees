@@ -51,6 +51,9 @@
     <ClInclude Include="NormalBST.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SelfBalancedTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

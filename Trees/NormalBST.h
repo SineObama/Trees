@@ -55,7 +55,7 @@ typename NormalBST<T>::Bnode_ptr NormalBST<T>::insertToTree
     Bnode_ptr_ref _c = _r->child[v < _r->v ? 0 : 1];
     if (_c != NULL)
         return insertToTree(v, _c);
-    _c = new Node(v);
+    _c = new BinaryNode(v);
     return _c;
 }
 
@@ -73,7 +73,7 @@ typename NormalBST<T>::Bnode_ptr NormalBST<T>::removeFromTree
             _r->child[1] = rtn->child[1];
         }
         else if (_r->child[1] != NULL) {  // 取右树最小值来替换。
-            _r = pickMax(rtn->child[0]);
+            _r = pickMin(rtn->child[1]);
             _r->child[1] = rtn->child[1];
         }
         else {
@@ -87,6 +87,42 @@ typename NormalBST<T>::Bnode_ptr NormalBST<T>::removeFromTree
     if (_c == NULL)
         return NULL;
     return removeFromTree(v, _c);
+}
+
+/**
+* 不接受空节点
+*/
+template<class T>
+typename NormalBST<T>::Bnode_ptr NormalBST<T>::pickMax(Bnode_ptr_ref _r) {
+    if (_r->child[1] != NULL) 
+        return pickMax(_r->child[1]);
+    Bnode_ptr rtn = _r;
+    if (_r->child[0] != NULL) {
+        _r = pickMax(rtn->child[0]);
+        _r->child[0] = rtn->child[0];
+    }
+    else {
+        _r = NULL;
+    }
+    return rtn;
+}
+
+/**
+* 不接受空节点
+*/
+template<class T>
+typename NormalBST<T>::Bnode_ptr NormalBST<T>::pickMin(Bnode_ptr_ref _r) {
+    if (_r->child[0] != NULL)
+        return pickMin(_r->child[0]);
+    Bnode_ptr rtn = _r;
+    if (_r->child[1] != NULL) {
+        _r = pickMin(rtn->child[1]);
+        _r->child[1] = rtn->child[1];
+    }
+    else {
+        _r = NULL;
+    }
+    return rtn;
 }
 
 }

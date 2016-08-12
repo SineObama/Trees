@@ -5,6 +5,7 @@
 #include <stack>
 #include <iostream>
 #include <ctime>
+#include "NormalBST.h"
 #include "AVLTree.h"
 #include "RBTree.h"
 #include "Timer.h"
@@ -17,7 +18,7 @@ int insertNum = 100000, removeNum = 100000, findNum = 100000;
 class Container;
 void handler(Container &);
 void const_handler(const Container &c);
-void test(SelfBalancedBT<Container> *t);
+void test(BinarySearchTree<Container> *t);
 int random(int bit = 18);
 
 int main()
@@ -36,8 +37,16 @@ int main()
         srand(curtime & 0xFFFFFFFF);
         cout << "AVLTree" << endl;
         AVLTree<Container> a;
-        test(&AVLTree<Container>());
+        test(&a);
         AVLTree<Container> b(a);
+    }
+
+    {
+        srand(curtime & 0xFFFFFFFF);
+        cout << "NormalBST" << endl;
+        NormalBST<Container> a;
+        test(&a);
+        NormalBST<Container> b(a);
     }
 
     system("pause");
@@ -65,7 +74,7 @@ void const_handler(const Container &c) {
     cout << i++ << " " << c.i << endl;
 }
 
-void test(SelfBalancedBT<Container> *t) {
+void test(BinarySearchTree<Container> *t) {
     Timer timer;
     timer.update();
     for (int i = 0; i < insertNum; i++) {
@@ -73,7 +82,6 @@ void test(SelfBalancedBT<Container> *t) {
     }
     cout << "insert: " << timer.update() << endl;
     cout << "checkValid: " << t->checkValid() << endl;
-    cout << "checkBalance: " << t->checkBalance() << endl;
 
     int count = 0;
     timer.update();
@@ -83,7 +91,6 @@ void test(SelfBalancedBT<Container> *t) {
     }
     cout << "remove: " << timer.update() << endl;
     cout << "checkValid: " << t->checkValid() << endl;
-    cout << "checkBalance: " << t->checkBalance() << endl;
 
     //const SelfBalancedBT<Container> *tem = t;
     //tem->traverse(const_handler, inOrder);
